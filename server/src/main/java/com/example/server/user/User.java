@@ -15,16 +15,8 @@ import java.util.Collection;
 @Entity @NoArgsConstructor @AllArgsConstructor @Data @Builder
 public class User implements UserDetails {
     private @Id @GeneratedValue(strategy = GenerationType.AUTO) Long id;
-
-    @NotNull(message = "Username must be provided.")
-    @Size(min=5, max=25, message = "Username must be between {min} and {max} characters long.")
     private @Column(nullable = false, unique = true) String username;
-
-    @NotNull(message = "Password must be provided.")
-    @Size(min=5, message = "Password must be at least {min} characters long.")
     private @Column(nullable = false) String password;
-
-    @NotNull(message = "Role must be provided.")
     private @Enumerated @Column(nullable = false) Role role;
 
     @Override

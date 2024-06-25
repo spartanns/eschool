@@ -40,9 +40,7 @@ public enum Role {
     ),
     STUDENT(
             Set.of(STUDENT_READ)
-    )
-
-    ;
+    );
 
     private final @Getter Set<Permission> permissions;
 

@@ -17,9 +17,7 @@ public enum Permission {
     MANAGER_DELETE("manager:delete"),
 
     PARENT_READ("parent:read"),
-    STUDENT_READ("student:read")
-
-    ;
+    STUDENT_READ("student:read");
 
     private final @Getter String permission;
 }
