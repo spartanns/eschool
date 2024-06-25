@@ -14,12 +14,21 @@ import java.util.List;
 
 @RestController @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')") @RequestMapping("/api/v1/admin/students")
-public class StudentController {
+public class AdminStudentController {
     private final StudentService service;
 
     @GetMapping @PreAuthorize("hasAuthority('admin:read')")
     ResponseEntity<List<Student>> getAllStudents() {
         return new ResponseEntity<List<Student>>(service.index(), HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')")
+    ResponseEntity<?> singleStudent(@PathVariable Long id) {
+        try {
+            return new ResponseEntity<Student>(service.readStudent(id), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PostMapping("/new") @PreAuthorize("hasAuthority('admin:create')")

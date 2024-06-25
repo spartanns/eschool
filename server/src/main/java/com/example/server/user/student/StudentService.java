@@ -66,4 +66,8 @@ public class StudentService {
 
         return "Student deleted.";
     }
+
+    public Student readStudent(Long id) {
+        return repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Student not found."));
+    }
 }

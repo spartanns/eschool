@@ -1,15 +1,16 @@
 package com.example.server.management;
 
 import com.example.server.management.department.Department;
-import com.example.server.management.department.DepartmentService;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.Type;
 import com.example.server.management.lecture.Lecture;
-import com.example.server.management.lecture.LectureService;
 import com.example.server.management.lecture.dao.LectureView;
+import com.example.server.management.subject.Subject;
+import com.example.server.management.subject.dto.SubjectRequest;
 import com.example.server.user.student.Student;
 import com.example.server.user.teacher.Teacher;
 import com.example.server.user.teacher.TeacherService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +46,38 @@ public class TeacherController {
     ResponseEntity<?> viewDepartment(@PathVariable Long teacherID, @PathVariable Long deptID) {
         try {
             return new ResponseEntity<Department>(service.readDepartment(teacherID, deptID), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{teacherID}/departments/{deptID}/subjects") @PreAuthorize("hasAuthority('manager:read')")
+    ResponseEntity<List<Subject>> getDepartmentSubjects(@PathVariable Long teacherID, @PathVariable Long deptID) {
+        return new ResponseEntity<List<Subject>>(service.readDeptSubjects(teacherID, deptID), HttpStatus.OK);
+    }
+
+    @PostMapping("/{teacherID}/departments/{deptID}/subjects/new") @PreAuthorize("hasAuthority('manager:create')")
+    ResponseEntity<String> addDeptSubject(@PathVariable Long teacherID, @PathVariable Long deptID, @Valid @RequestBody SubjectRequest request) {
+        try {
+            return new ResponseEntity<String>(service.createSubject(teacherID, deptID, request), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}") @PreAuthorize("hasAuthority('manager:read')")
+    ResponseEntity<?> singleSubject(@PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID) {
+        try {
+            return new ResponseEntity<Subject>(service.readSubject(teacherID, deptID, subjectID), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/delete") @PreAuthorize("hasAuthority('manager:delete')")
+    ResponseEntity<String> deleteDeptSubject(@PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID) {
+        try {
+            return new ResponseEntity<String>(service.deleteSubject(teacherID, deptID, subjectID), HttpStatus.NO_CONTENT);
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }

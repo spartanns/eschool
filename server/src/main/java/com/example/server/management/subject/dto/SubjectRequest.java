@@ -17,7 +17,4 @@ public class SubjectRequest {
 
     @NotNull(message = "Subject must be assigned to a semester.")
     private Semester semester;
-
-    @NotNull(message = "Subject must be assigned to a department.")
-    private Long departmentID;
 }

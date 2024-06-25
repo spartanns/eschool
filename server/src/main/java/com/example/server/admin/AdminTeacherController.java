@@ -3,6 +3,7 @@ package com.example.server.admin;
 import com.example.server.user.teacher.Teacher;
 import com.example.server.user.teacher.TeacherService;
 import com.example.server.user.teacher.dto.TeacherRequest;
+import com.example.server.user.teacher.dto.TeacherUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,5 +30,32 @@ public class AdminTeacherController {
     @GetMapping @PreAuthorize("hasAuthority('admin:read')")
     ResponseEntity<List<Teacher>> getAllTeachers() {
         return new ResponseEntity<List<Teacher>>(service.index(), HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')")
+    ResponseEntity<?> singleTeacher(@PathVariable Long id) {
+        try {
+            return new ResponseEntity<Teacher>(service.readTeacher(id), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/{id}/update") @PreAuthorize("hasAuthority('admin:update')")
+    ResponseEntity<String> updateSingleTeacher(@PathVariable Long id, @Valid @RequestBody TeacherUpdateRequest request) {
+        try {
+            return new ResponseEntity<String>(service.updateTeacher(id, request), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/{id}/delete") @PreAuthorize("hasAuthority('admin:delete')")
+    ResponseEntity<String> deleteSingleTeacher(@PathVariable Long id) {
+        try {
+            return new ResponseEntity<String>(service.deleteTeacher(id), HttpStatus.NO_CONTENT);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

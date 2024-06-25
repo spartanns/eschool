@@ -9,6 +9,8 @@ import com.example.server.management.lecture.Lecture;
 import com.example.server.management.lecture.LectureRepository;
 import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.subject.Subject;
+import com.example.server.management.subject.SubjectRepository;
+import com.example.server.management.subject.dto.SubjectRequest;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
 import com.example.server.user.email.Email;
@@ -16,12 +18,14 @@ import com.example.server.user.email.EmailService;
 import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentRepository;
 import com.example.server.user.teacher.dto.TeacherRequest;
+import com.example.server.user.teacher.dto.TeacherUpdateRequest;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -33,9 +37,11 @@ public class TeacherService {
     private final LectureRepository lectureRepository;
     private final TeacherRepository teacherRepository;
     private final StudentRepository studentRepository;
+    private final SubjectRepository subjectRepository;
     private final GradeRepository gradeRepository;
     private final EmailService emailService;
     private final PasswordEncoder encoder;
+    private final Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
     public Teacher createTeacher(TeacherRequest request) {
         var user = User
@@ -52,6 +58,8 @@ public class TeacherService {
                 .surname(request.getSurname())
                 .user(user)
                 .build();
+
+        logger.info(String.format("Teacher %s %s created.", teacher.getName(), teacher.getSurname()));
 
         return repository.save(teacher);
     }
@@ -114,6 +122,12 @@ public class TeacherService {
                 .subject(s)
                 .createdAt(new Date(System.currentTimeMillis()))
                 .build();
+
+        logger.info(String.format("Lecture with ID: %d created by %s %s.", lecture.getId(), lecture.getTeacher().getName(), lecture.getTeacher().getSurname()));
+
+        s.setHours(s.getHours() + 1);
+
+        subjectRepository.save(s);
 
         return lectureRepository.save(lecture);
     }
@@ -281,7 +295,113 @@ public class TeacherService {
                 .build();
 
         emailService.sendEmail(email);
+        logger.info(String.format("%s %s added a grade %d to student %s %s of type %s in %s", teacher.getName(), teacher.getSurname(), grade.getValue(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getType().name(), l.getSubject().getName()));
 
         return String.format("Student %s %s received a grade %d.", s.getName(), s.getSurname(), grade.getValue());
+    }
+
+    public String updateTeacher(Long id, TeacherUpdateRequest request) {
+        Teacher teacher = repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Teacher not found"));
+
+        teacher.setName(request.getName());
+        teacher.setSurname(request.getSurname());
+
+        repository.save(teacher);
+
+        return String.format("Teacher %s %s successfully updated.", teacher.getName(), teacher.getSurname());
+    }
+
+    public String deleteTeacher(Long id) {
+        Teacher teacher = repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        repository.delete(teacher);
+
+        logger.warn(String.format("Teacher with ID: %d deleted.", id));
+
+        return String.format("Teacher %s %s successfully deleted.", teacher.getName(), teacher.getSurname());
+    }
+
+    public List<Subject> readDeptSubjects(Long teacherID, Long deptID) {
+        Teacher teacher = repository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        List<Department> departments = teacher.getDepartments();
+        Department d = null;
+
+        for (Department dept : departments) {
+            if (dept.getId().equals(deptID)) {
+                d = dept;
+            }
+        }
+
+        return d.getSubjects();
+    }
+
+    public Subject readSubject(Long teacherID, Long deptID, Long subjectID) {
+        Teacher teacher = repository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        Department d = null;
+        Subject s = null;
+
+        for (Department dept : teacher.getDepartments()) {
+            if (dept.getId().equals(deptID)) {
+                d = dept;
+            }
+        }
+
+        for (Subject subject : d.getSubjects()) {
+            if (subject.getId().equals(subjectID)) {
+                s = subject;
+            }
+        }
+
+        return s;
+    }
+
+    public String deleteSubject(Long teacherID, Long deptID, Long subjectID) {
+        Teacher teacher = repository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        Department d = null;
+        Subject s = null;
+
+        for (Department dept : teacher.getDepartments()) {
+            if (dept.getId().equals(deptID)) {
+                d = dept;
+            }
+        }
+
+        for (Subject subject : d.getSubjects()) {
+            if (subject.getId().equals(subjectID)) {
+                s = subject;
+            }
+        }
+
+        subjectRepository.delete(s);
+
+        logger.warn(String.format("Subject with ID: %d deleted.", subjectID));
+
+        return String.format("Subject with ID: %d deleted.", subjectID);
+    }
+
+    public String createSubject(Long teacherID, Long deptID, SubjectRequest request) {
+        Teacher teacher = repository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        Department d = null;
+
+        for (Department dept : teacher.getDepartments()) {
+            if (dept.getId().equals(deptID)) {
+                d = dept;
+            }
+        }
+
+        Subject subject = Subject
+                .builder()
+                .name(request.getName())
+                .semester(request.getSemester())
+                .dept(d)
+                .build();
+
+        subjectRepository.save(subject);
+
+        d.getSubjects().add(subject);
+        deptRepository.save(d);
+
+        logger.info(String.format("Subject with ID: %d created.", subject.getId()));
+
+        return String.format("Subject with ID: %d created.", subject.getId());
     }
 }

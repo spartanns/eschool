@@ -12,7 +12,7 @@ import java.util.List;
 public class SubjectService {
     private final SubjectRepository repository;
     private final DepartmentRepository deptRepository;
-
+/*
     public Subject createSubject(SubjectRequest request) {
         Department dept = deptRepository.findById(request.getDepartmentID()).orElse(null);
 
@@ -25,7 +25,7 @@ public class SubjectService {
 
         return repository.save(subject);
     }
-
+*/
     public List<Subject> index() {
         return repository.findAll();
     }
