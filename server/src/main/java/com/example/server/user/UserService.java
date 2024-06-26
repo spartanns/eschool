@@ -1,7 +1,6 @@
 package com.example.server.user;
 
 import com.example.server.auth.dto.RegisterRequest;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,9 +13,6 @@ public class UserService {
     private final UserRepository repository;
     private final PasswordEncoder encoder;
 
-    /*
-     *  USER MANAGEMENT
-     */
     public List<User> index() {
         return repository.findAll();
     }
@@ -41,5 +37,21 @@ public class UserService {
             }
 
             return "User not found.";
+    }
+
+    public String updateUser(Long id, RegisterRequest request) {
+        User user = repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+
+        user.setUsername(request.getUsername());
+        user.setPassword(encoder.encode(request.getPassword()));
+        user.setRole(request.getRole());
+
+        repository.save(user);
+
+        return String.format("User with ID: %d successfully updated.", user.getId());
+    }
+
+    public User readUser(Long id) {
+        return repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("User not found."));
     }
 }

@@ -45,5 +45,23 @@ public class UserController {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+    @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')")
+    ResponseEntity<?> singleUser(@PathVariable Long id) {
+        try {
+            return new ResponseEntity<User>(service.readUser(id), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/{id}/edit") @PreAuthorize("hasAuthority('admin:update')")
+    ResponseEntity<String> updateSingleUser(@PathVariable Long id, @Valid @RequestBody RegisterRequest request) {
+        try {
+            return new ResponseEntity<String>(service.updateUser(id, request), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
 
