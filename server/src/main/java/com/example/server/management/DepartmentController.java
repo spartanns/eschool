@@ -3,7 +3,6 @@ package com.example.server.management;
 import com.example.server.management.department.Department;
 import com.example.server.management.department.DepartmentService;
 import com.example.server.management.department.dto.DeptRequest;
-import com.example.server.management.subject.SubjectRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

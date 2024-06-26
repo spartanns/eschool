@@ -2,6 +2,7 @@ package com.example.server.user.parent;
 
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
+import com.example.server.user.parent.dao.PrivateParentView;
 import com.example.server.user.parent.dto.ParentRequest;
 import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentRepository;

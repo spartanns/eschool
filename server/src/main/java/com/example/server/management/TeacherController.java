@@ -1,12 +1,16 @@
 package com.example.server.management;
 
+import com.example.server.config.JwtService;
 import com.example.server.management.department.Department;
+import com.example.server.management.department.DepartmentRepository;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.Type;
 import com.example.server.management.lecture.Lecture;
 import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.dto.SubjectRequest;
+import com.example.server.user.User;
+import com.example.server.user.UserRepository;
 import com.example.server.user.student.Student;
 import com.example.server.user.teacher.Teacher;
 import com.example.server.user.teacher.TeacherService;
@@ -15,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,12 +28,23 @@ import java.util.List;
 @PreAuthorize("hasRole('MANAGER')") @RequestMapping("/api/v1/mgmt/teachers")
 public class TeacherController {
     private final TeacherService service;
+    private final UserRepository userRepository;
+    private final DepartmentRepository deptRepository;
+    private final JwtService jwtService;
 
     @GetMapping("/{id}") @PreAuthorize("hasAuthority('manager:read')")
-    ResponseEntity<?> singleTeacher(@PathVariable Long id) {
+    ResponseEntity<?> singleTeacher(@RequestHeader("Authorization") String token, @PathVariable Long id) {
         try {
-            return new ResponseEntity<Teacher>(service.readTeacher(id), HttpStatus.OK);
+            User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+
+            if (user.getUsername().equals(service.readTeacher(id).getUser().getUsername())) {
+
+                return new ResponseEntity<Teacher>(service.readTeacher(id), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
+
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -43,9 +59,31 @@ public class TeacherController {
     }
 
     @GetMapping("/{teacherID}/departments/{deptID}") @PreAuthorize("hasAuthority('manager:read')")
-    ResponseEntity<?> viewDepartment(@PathVariable Long teacherID, @PathVariable Long deptID) {
+    ResponseEntity<?> viewDepartment(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID) {
         try {
-            return new ResponseEntity<Department>(service.readDepartment(teacherID, deptID), HttpStatus.OK);
+            User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+            Department dept = deptRepository.findById(deptID) .orElseThrow(() -> new Exception("Dept not found."));
+            Teacher t = null;
+            Department d = null;
+
+            for (Teacher teacher : dept.getTeachers()) {
+                if (teacher.getId().equals(teacherID)) {
+                    t = teacher;
+                }
+            }
+
+            for (Department deptm : t.getDepartments()) {
+                if (deptm.getId().equals(deptID)) {
+                    d = deptm;
+                }
+            }
+
+            if (user.getUsername().equals(service.readTeacher(teacherID).getUser().getUsername()) && d.getId().equals(deptID)) {
+
+                return new ResponseEntity<Department>(service.readDepartment(teacherID, deptID), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -92,6 +130,24 @@ public class TeacherController {
         }
     }
 
+    @PostMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures/{lectureID}/students/{studentID}/grades/new") @PreAuthorize("hasAuthority('manager:create')")
+    ResponseEntity<?> addGradeToStudent(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID, @PathVariable Long lectureID, @PathVariable Long studentID, @RequestParam int value, @RequestParam Type type) {
+        try {
+            User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+            Teacher teacher = service.readTeacher(teacherID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+
+                return new ResponseEntity<String>(service.updateLectureStudentGrades(teacherID, deptID, subjectID, lectureID, studentID, value, type), HttpStatus.CREATED);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/{teacherID}/departments/{deptID}/lectures") @PreAuthorize("hasAuthority('manager:read')")
     ResponseEntity<?> getAllLectures(@PathVariable Long teacherID, @PathVariable Long deptID) {
         try {
@@ -132,7 +188,7 @@ public class TeacherController {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
+/*
     @PatchMapping("/{teacherID}/departments/{deptID}/lectures/{lectureID}/students/{studentID}/grades/new") @PreAuthorize("hasAuthority('manager:update')")
     ResponseEntity<String> addLectureStudentGrade(@PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long lectureID, @PathVariable Long studentID, @RequestParam int value, @RequestParam Type type) {
         try {
@@ -140,5 +196,5 @@ public class TeacherController {
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    */
 }

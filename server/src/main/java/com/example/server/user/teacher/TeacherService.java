@@ -79,16 +79,16 @@ public class TeacherService {
     }
 
     public Department readDepartment(Long teacherID, Long deptID) {
-        Department dept = deptRepository.findById(deptID).orElseThrow(() -> new UsernameNotFoundException("Department not found."));
-        List<Teacher> teachers = dept.getTeachers();
+        Teacher teacher = repository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        Department d = null;
 
-        for (Teacher teacher : teachers) {
-            if (teacher.getId().equals(teacherID)) {
-                return dept;
+        for (Department dept : teacher.getDepartments()) {
+            if (dept.getId().equals(deptID)) {
+                d = dept;
             }
         }
 
-        return null;
+        return d;
     }
 
     public Lecture createLecture(Long teacherID, Long deptID, Long subjectID) {
@@ -248,8 +248,9 @@ public class TeacherService {
         return s.getGrades();
     }
 
-    public String updateLectureStudentGrades(Long teacherID, Long deptID, Long lectureID, Long studentID, int value, Type type) {
+    public String updateLectureStudentGrades(Long teacherID, Long deptID, Long subjectID, Long lectureID, Long studentID, int value, Type type) {
         Teacher teacher = repository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        Subject subject = null;
         Department d = null;
         Lecture l = null;
         Student s = null;
@@ -257,6 +258,12 @@ public class TeacherService {
         for (Department dept : teacher.getDepartments()) {
             if (dept.getId().equals(deptID)) {
                 d = dept;
+            }
+        }
+
+        for (Subject subj : d.getSubjects()) {
+            if (subj.getId().equals(subjectID)) {
+                subject = subj;
             }
         }
 
@@ -276,6 +283,7 @@ public class TeacherService {
                 .builder()
                 .value(value)
                 .type(type)
+                .subject(subject)
                 .lecture(l)
                 .student(s)
                 .createdAt(new Date(System.currentTimeMillis()))

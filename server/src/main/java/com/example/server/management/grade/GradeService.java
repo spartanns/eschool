@@ -21,6 +21,10 @@ public class GradeService {
     private final LectureRepository lectureRepository;
     private final TeacherRepository teacherRepository;
 
+    public Grade readGrade(Long id) {
+        return  repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Grade not found."));
+    }
+
     public Grade createGrade(GradeRequest request) {
         Lecture lecture = lectureRepository.findById(request.getLectureID()).orElseThrow(() -> new UsernameNotFoundException("Lecture not found."));
         List<Student> students = lecture.getDept().getStudents();
@@ -57,5 +61,16 @@ public class GradeService {
         teacherRepository.save(t);
 
         return grade;
+    }
+
+    public List<Grade> index() {
+        return repository.findAll();
+    }
+
+    public String deleteGrade(Long id) throws Exception {
+        Grade grade = repository.findById(id).orElseThrow(() -> new Exception("Grade not found."));
+        repository.delete(grade);
+
+        return String.format("Grade %d successfully deleted.", id);
     }
 }
