@@ -1,7 +1,7 @@
 package com.example.server.management.lecture;
 
-import com.example.server.management.department.Department;
-import com.example.server.management.department.DepartmentRepository;
+import com.example.server.admin.department.Department;
+import com.example.server.admin.department.DepartmentRepository;
 import com.example.server.management.lecture.dto.LectureRequest;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.SubjectRepository;
@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 

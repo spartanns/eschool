@@ -1,6 +1,6 @@
-package com.example.server.management.department;
+package com.example.server.admin.department;
 
-import com.example.server.management.department.dto.DeptRequest;
+import com.example.server.admin.department.dto.DeptRequest;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.SubjectRepository;
 import com.example.server.user.student.Student;
@@ -8,6 +8,8 @@ import com.example.server.user.student.StudentRepository;
 import com.example.server.user.teacher.Teacher;
 import com.example.server.user.teacher.TeacherRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,7 @@ public class DepartmentService {
     private final SubjectRepository subjectRepository;
     private final TeacherRepository teacherRepository;
     private final DepartmentRepository deptRepository;
+    private Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
     public Department createDept(DeptRequest request) {
         Department dept = Department
@@ -27,7 +30,13 @@ public class DepartmentService {
                 .name(request.getName())
                 .build();
 
+        logger.info(String.format("Department %s created.", dept.getName()));
+
         return repository.save(dept);
+    }
+
+    public Department readDept(Long id) {
+        return repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Department not found."));
     }
 
     public List<Department> index() {
@@ -44,6 +53,8 @@ public class DepartmentService {
         dept.getStudents().add(student);
         repository.save(dept);
 
+        logger.info(String.format("Student %s %s with ID: %d added to department %s", student.getName(), student.getSurname(), student.getId(), dept.getName()));
+
         return String.format("Student with ID: %d added to department ID: %d", studentID, deptID);
     }
 
@@ -57,10 +68,12 @@ public class DepartmentService {
         dept.getSubjects().add(subject);
         repository.save(dept);
 
-        return String.format("Subject with ID: %d added to department with ID: %d.", subjectID, deptID);
+        logger.info(String.format("Subject %s with ID: %d added to department %s.", subject.getName(), subject.getId(), dept.getName()));
+
+        return String.format("Subject %s with ID: %d added to department %s.", subject.getName(), subject.getId(), dept.getName());
     }
 
-    public Department addTeacher(Long deptID, Long teacherID) {
+    public String addTeacher(Long deptID, Long teacherID) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
         Department dept = deptRepository.findById(deptID).orElseThrow(() -> new UsernameNotFoundException("Department not found."));
 
@@ -68,7 +81,19 @@ public class DepartmentService {
         teacherRepository.save(teacher);
 
         dept.getTeachers().add(teacher);
+        deptRepository.save(dept);
 
-        return deptRepository.save(dept);
+        logger.info(String.format("Teacher %s %s added to department %s.", teacher.getName(), teacher.getSurname(), dept.getName()));
+
+        return String.format("Teacher %s %s added to department %s.", teacher.getName(), teacher.getSurname(), dept.getName());
+    }
+
+    public String deleteDept(Long id) {
+        Department dept = repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Department not found."));
+        repository.delete(dept);
+
+        logger.warn(String.format("Department with ID: %d deleted.", id));
+
+        return String.format("Department with ID: %d deleted.", id);
     }
 }

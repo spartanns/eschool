@@ -1,8 +1,8 @@
 package com.example.server.management;
 
-import com.example.server.management.department.Department;
-import com.example.server.management.department.DepartmentService;
-import com.example.server.management.department.dto.DeptRequest;
+import com.example.server.admin.department.Department;
+import com.example.server.admin.department.DepartmentService;
+import com.example.server.admin.department.dto.DeptRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -50,9 +50,9 @@ public class DepartmentController {
     }
 
     @PatchMapping("/{deptID}/teachers/add") @PreAuthorize("hasAuthority('manager:update')")
-    ResponseEntity<?> addTeacherToDept(@PathVariable Long deptID, @RequestParam Long teacherID) {
+    ResponseEntity<String> addTeacherToDept(@PathVariable Long deptID, @RequestParam Long teacherID) {
         try {
-            return new ResponseEntity<Department>(service.addTeacher(deptID, teacherID), HttpStatus.CREATED);
+            return new ResponseEntity<String>(service.addTeacher(deptID, teacherID), HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }

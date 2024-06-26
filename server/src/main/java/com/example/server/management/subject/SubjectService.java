@@ -1,8 +1,6 @@
 package com.example.server.management.subject;
 
-import com.example.server.management.department.Department;
-import com.example.server.management.department.DepartmentRepository;
-import com.example.server.management.subject.dto.SubjectRequest;
+import com.example.server.admin.department.DepartmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

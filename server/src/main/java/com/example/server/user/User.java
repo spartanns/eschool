@@ -1,8 +1,8 @@
 package com.example.server.user;
 
+import com.example.server.security.Views;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,32 +14,36 @@ import java.util.Collection;
 
 @Entity @NoArgsConstructor @AllArgsConstructor @Data @Builder
 public class User implements UserDetails {
+    @JsonView(Views.Public.class)
     private @Id @GeneratedValue(strategy = GenerationType.AUTO) Long id;
+    @JsonView(Views.Private.class)
     private @Column(nullable = false, unique = true) String username;
+    @JsonView(Views.Private.class)
     private @Column(nullable = false) String password;
+    @JsonView(Views.Admin.class)
     private @Enumerated @Column(nullable = false) Role role;
 
-    @Override
+    @Override @JsonView(Views.Admin.class)
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return role.getAuthorities();
     }
 
-    @Override
+    @Override @JsonView(Views.Admin.class)
     public boolean isAccountNonExpired() {
         return UserDetails.super.isAccountNonExpired();
     }
 
-    @Override
+    @Override @JsonView(Views.Admin.class)
     public boolean isAccountNonLocked() {
         return UserDetails.super.isAccountNonLocked();
     }
 
-    @Override
+    @Override @JsonView(Views.Admin.class)
     public boolean isCredentialsNonExpired() {
         return UserDetails.super.isCredentialsNonExpired();
     }
 
-    @Override
+    @Override @JsonView(Views.Admin.class)
     public boolean isEnabled() {
         return UserDetails.super.isEnabled();
     }

@@ -1,4 +1,4 @@
-package com.example.server.management.department.dto;
+package com.example.server.admin.department.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

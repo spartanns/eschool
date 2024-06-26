@@ -1,4 +1,4 @@
-package com.example.server.management.department;
+package com.example.server.admin.department;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

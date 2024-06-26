@@ -22,7 +22,9 @@ public enum Role {
                     MANAGER_CREATE,
                     MANAGER_READ,
                     MANAGER_UPDATE,
-                    MANAGER_DELETE
+                    MANAGER_DELETE,
+                    PARENT_READ,
+                    STUDENT_READ
             )
     ),
     MANAGER(

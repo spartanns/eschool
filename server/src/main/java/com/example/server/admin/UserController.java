@@ -1,8 +1,10 @@
 package com.example.server.admin;
 
 import com.example.server.auth.dto.RegisterRequest;
+import com.example.server.security.Views;
 import com.example.server.user.User;
 import com.example.server.user.UserService;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,7 +21,7 @@ public class UserController {
    private final UserService service;
    private final PasswordEncoder encoder;
 
-    @GetMapping @PreAuthorize("hasAuthority('admin:read')")
+    @GetMapping @PreAuthorize("hasAuthority('admin:read')") @JsonView(Views.Admin.class)
     ResponseEntity<?> showUsers() {
         try {
             return new ResponseEntity<List<User>>(service.index(), HttpStatus.OK);
@@ -46,7 +48,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')")
+    @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')") @JsonView(Views.Admin.class)
     ResponseEntity<?> singleUser(@PathVariable Long id) {
         try {
             return new ResponseEntity<User>(service.readUser(id), HttpStatus.OK);
