@@ -1,14 +1,17 @@
 package com.example.server.management;
 
+import com.example.server.admin.department.dao.SingleDeptView;
 import com.example.server.config.JwtService;
 import com.example.server.admin.department.Department;
 import com.example.server.admin.department.DepartmentRepository;
 import com.example.server.management.grade.Grade;
+import com.example.server.management.grade.GradeService;
 import com.example.server.management.grade.Type;
 import com.example.server.management.grade.dao.GradeView;
 import com.example.server.management.lecture.Lecture;
 import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.subject.Subject;
+import com.example.server.management.subject.dao.SingleSubjectView;
 import com.example.server.management.subject.dto.SubjectRequest;
 import com.example.server.security.Views;
 import com.example.server.user.User;
@@ -32,6 +35,7 @@ import java.util.List;
 @PreAuthorize("hasRole('MANAGER')") @RequestMapping("/api/v1/mgmt")
 public class TeacherController {
     private final TeacherService service;
+    private final GradeService gradeService;
     private final UserRepository userRepository;
     private final DepartmentRepository deptRepository;
     private final JwtService jwtService;
@@ -60,7 +64,7 @@ public class TeacherController {
 
             if (user.getUsername().equals(service.readTeacher(id).getUser().getUsername())) {
 
-                return new ResponseEntity<List<Department>>(service.readDepartments(id), HttpStatus.OK);
+                return new ResponseEntity<List<SingleDeptView>>(service.readDepartments(id), HttpStatus.OK);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
@@ -69,7 +73,7 @@ public class TeacherController {
         }
     }
 
-    @GetMapping("/{teacherID}/departments/{deptID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Public.class)
+    @GetMapping("/{teacherID}/departments/{deptID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.General.class)
     ResponseEntity<?> viewDepartment(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID) {
         try {
             User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).orElseThrow(() -> new UsernameNotFoundException("User not found."));
@@ -91,7 +95,7 @@ public class TeacherController {
 
             if (user.getUsername().equals(service.readTeacher(teacherID).getUser().getUsername()) && d.getId().equals(deptID)) {
 
-                return new ResponseEntity<Department>(service.readDepartment(teacherID, deptID), HttpStatus.OK);
+                return new ResponseEntity<SingleDeptView>(service.readDepartment(teacherID, deptID), HttpStatus.OK);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
@@ -101,10 +105,22 @@ public class TeacherController {
     }
 
     @GetMapping("/{teacherID}/departments/{deptID}/subjects") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Public.class)
-    ResponseEntity<List<Subject>> getDepartmentSubjects(@PathVariable Long teacherID, @PathVariable Long deptID) {
-        return new ResponseEntity<List<Subject>>(service.readDeptSubjects(teacherID, deptID), HttpStatus.OK);
+    ResponseEntity<?> getDepartmentSubjects(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID) {
+        try {
+            User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+            Teacher teacher = service.readTeacher(teacherID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+                return new ResponseEntity<List<SingleSubjectView>>(service.readDeptSubjects(teacherID, deptID), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
+    // TODO: Move to admin
     @PostMapping("/{teacherID}/departments/{deptID}/subjects/new") @PreAuthorize("hasAuthority('manager:create')")
     ResponseEntity<String> addDeptSubject(@PathVariable Long teacherID, @PathVariable Long deptID, @Valid @RequestBody SubjectRequest request) {
         try {
@@ -123,7 +139,23 @@ public class TeacherController {
         }
     }
 
-    @GetMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures/{lectureID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Public.class)
+    @GetMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Public.class)
+    ResponseEntity<?> getSubjectLectures(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID) {
+        try {
+            User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+            Teacher teacher = service.readTeacher(teacherID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+                return new ResponseEntity<List<LectureView>>(service.readSubjectLectures(teacherID, deptID, subjectID), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures/{lectureID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.General.class)
     ResponseEntity<?> singleLecture(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID, @PathVariable Long lectureID) {
         try {
             User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).orElseThrow(() -> new UsernameNotFoundException("User not found."));
@@ -179,6 +211,23 @@ public class TeacherController {
 
             if (user.getUsername().equals(teacher.getUser().getUsername())) {
                 return new ResponseEntity<List<GradeView>>(service.readLectureStudentGrades(teacherID, deptID, subjectID, lectureID, studentID), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures/{lectureID}/students/{studentID}/grades/{gradeID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Private.class)
+    ResponseEntity<?> getLectureStudentGrade(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID, @PathVariable Long lectureID, @PathVariable Long studentID, @PathVariable Long gradeID) {
+        try {
+            User user = userRepository.findByUsername(jwtService.extractUsername(token.substring(7))).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+            Teacher teacher = service.readTeacher(teacherID);
+            Grade grade = gradeService.readGrade(gradeID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername()) && user.getUsername().equals(grade.getCreatedBy().getUser().getUsername())) {
+                return new ResponseEntity<GradeView>(service.readLectureStudentGrade(teacherID, deptID, subjectID, lectureID, studentID, gradeID), HttpStatus.OK);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);

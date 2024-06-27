@@ -22,7 +22,7 @@ public class Department {
     private @Column(nullable = false, unique = true) @JsonView(Views.Public.class) String name;
     @JsonView(Views.Private.class)
     private @JsonManagedReference @OneToMany(mappedBy = "dept", fetch = FetchType.LAZY, cascade = { CascadeType.REFRESH }) List<Student> students;
-    @JsonView(Views.Public.class)
+    @JsonView(Views.Private.class)
     private @JsonManagedReference @OneToMany(mappedBy = "dept", fetch = FetchType.LAZY, cascade = { CascadeType.REFRESH }) List<Subject> subjects;
     private @JsonBackReference @OneToMany(mappedBy = "dept", fetch = FetchType.LAZY, cascade = {CascadeType.REFRESH }) List<Lecture> lectures;
     private @JsonBackReference @ManyToMany @JoinTable(name = "dept_teacher", joinColumns = @JoinColumn(name = "dept_id"), inverseJoinColumns = @JoinColumn(name = "teacher_id")) List<Teacher> teachers;
