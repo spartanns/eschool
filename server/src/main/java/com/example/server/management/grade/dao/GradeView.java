@@ -18,8 +18,8 @@ public class GradeView {
     private @JsonView(Views.Public.class) Long gradeID;
     private @JsonView(Views.Public.class) int value;
     private @JsonView(Views.Public.class) String subject;
-    private @JsonView(Views.Public.class) Type type;
-    private @JsonView(Views.Public.class) Semester semester;
+    private @JsonView(Views.General.class) Type type;
+    private @JsonView(Views.General.class) Semester semester;
     private @JsonView(Views.Private.class) @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss") Date createdAt;
     private @JsonView(Views.Private.class) GradeTeacherView createdBy;
 }
