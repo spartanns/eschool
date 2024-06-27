@@ -17,6 +17,14 @@ public class UserService {
         return repository.findAll();
     }
 
+    public User readUser(Long id) {
+        return repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+    }
+
+    public User readUserByUsername(String username) {
+        return repository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+    }
+
     public User createUser(RegisterRequest request) {
         var user = User
                 .builder()
@@ -49,9 +57,5 @@ public class UserService {
         repository.save(user);
 
         return String.format("User with ID: %d successfully updated.", user.getId());
-    }
-
-    public User readUser(Long id) {
-        return repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("User not found."));
     }
 }
