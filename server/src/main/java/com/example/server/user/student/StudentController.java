@@ -78,4 +78,20 @@ public class StudentController {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/{id}/grades/search") @PreAuthorize("hasAuthority('student:read')") @JsonView(Views.General.class)
+    ResponseEntity<?> searchStudentGrades(@RequestHeader("Authorization") String token, @PathVariable Long id, @RequestParam String filterBy, @RequestParam String query) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Student student = service.readStudent(id);
+
+            if (user.getUsername().equals(student.getUser().getUsername())) {
+                return new ResponseEntity<List<GradeView>>(service.searchStudentGrades(id, filterBy, query), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

@@ -10,6 +10,8 @@ import com.example.server.user.student.dao.PrivateStudentView;
 import com.example.server.user.student.dto.StudentRequest;
 import com.example.server.user.teacher.dao.GradeTeacherView;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,9 +26,10 @@ public class StudentService {
     private final UserRepository userRepository;
     private final ParentRepository parentRepository;
     private final PasswordEncoder encoder;
+    private Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
     public Student createStudent(StudentRequest request) {
-        var user = User
+        User user = User
                 .builder()
                 .username(request.getUsername())
                 .password(encoder.encode(request.getPassword()))
@@ -34,7 +37,7 @@ public class StudentService {
                 .build();
         userRepository.save(user);
 
-        var student = Student
+        Student student = Student
                 .builder()
                 .name(request.getName())
                 .surname(request.getSurname())
@@ -47,6 +50,8 @@ public class StudentService {
                 .unattended(0)
                 .build();
 
+        logger.info(String.format("Student %s %s with studentID %d created.", student.getName(), student.getSurname(), student.getId()));
+
         return repository.save(student);
     }
 
@@ -57,17 +62,22 @@ public class StudentService {
     public Student updateParent(Long studentID, Long parentID) {
         Parent parent = parentRepository.findById(parentID).orElseThrow(() -> new UsernameNotFoundException("User not found."));
         Student student = repository.findById(studentID).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+
         parent.getStudents().add(student);
         parentRepository.save(parent);
-
         student.setParent(parent);
+
+        logger.info(String.format("Parent %s %s assigned to student %s %s.", parent.getName(), parent.getSurname(), student.getName(), student.getSurname()));
 
         return repository.save(student);
     }
 
     public String deleteStudent(Long id) {
         Student student = repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+
         repository.delete(student);
+
+        logger.warn(String.format("Student with ID: %d deleted.", id));
 
         return "Student deleted.";
     }
@@ -82,12 +92,14 @@ public class StudentService {
         List<GradeView> grades = new ArrayList<>();
 
         for (Grade g : student.getGrades()) {
+
             GradeTeacherView teacherView = GradeTeacherView
                     .builder()
                     .teacherID(g.getCreatedBy().getId())
                     .name(g.getCreatedBy().getName())
                     .surname(g.getCreatedBy().getSurname())
                     .build();
+
             GradeView grade = GradeView
                     .builder()
                     .gradeID(g.getId())
@@ -119,12 +131,14 @@ public class StudentService {
         List<GradeView> grades = new ArrayList<>();
 
         for (Grade g : student.getGrades()) {
+
             GradeTeacherView teacherView = GradeTeacherView
                     .builder()
                     .teacherID(g.getCreatedBy().getId())
                     .name(g.getCreatedBy().getName())
                     .surname(g.getCreatedBy().getSurname())
                     .build();
+
             GradeView grade = GradeView
                     .builder()
                     .gradeID(g.getId())
@@ -147,12 +161,14 @@ public class StudentService {
 
         for (Grade g : student.getGrades()) {
             if (g.getId().equals(gradeID)) {
+
                 GradeTeacherView teacherView = GradeTeacherView
                         .builder()
                         .teacherID(g.getCreatedBy().getId())
                         .name(g.getCreatedBy().getName())
                         .surname(g.getCreatedBy().getSurname())
                         .build();
+
                 grade = GradeView
                         .builder()
                         .gradeID(g.getId())
@@ -167,5 +183,179 @@ public class StudentService {
         }
 
         return grade;
+    }
+
+    public List<GradeView> searchStudentGrades(Long studentID, String filterBy, String query) {
+        Student student = readStudent(studentID);
+        List<GradeView> grades = new ArrayList<>();
+
+        switch (filterBy) {
+            case "value":
+                for (Grade g : student.getGrades()) {
+                    if (Integer.parseInt(query) == g.getValue()) {
+
+                        GradeTeacherView teacherView = GradeTeacherView
+                                .builder()
+                                .teacherID(g.getCreatedBy().getId())
+                                .name(g.getCreatedBy().getName())
+                                .surname(g.getCreatedBy().getSurname())
+                                .build();
+
+                        GradeView grade = GradeView
+                                .builder()
+                                .gradeID(g.getId())
+                                .value(g.getValue())
+                                .type(g.getType())
+                                .semester(g.getSubject().getSemester())
+                                .subject(g.getSubject().getName())
+                                .createdAt(g.getCreatedAt())
+                                .createdBy(teacherView)
+                                .build();
+                        grades.add(grade);
+                    }
+                }
+
+                break;
+
+            case "subject":
+                for (Grade g : student.getGrades()) {
+                    if (g.getSubject().getName().toLowerCase().equals(query.toLowerCase())) {
+
+                        GradeTeacherView teacher = GradeTeacherView
+                                .builder()
+                                .teacherID(g.getCreatedBy().getId())
+                                .name(g.getCreatedBy().getName())
+                                .surname(g.getCreatedBy().getSurname())
+                                .build();
+
+                        GradeView grade = GradeView
+                                .builder()
+                                .gradeID(g.getId())
+                                .value(g.getValue())
+                                .subject(g.getSubject().getName())
+                                .type(g.getType())
+                                .semester(g.getSubject().getSemester())
+                                .createdBy(teacher)
+                                .createdAt(g.getCreatedAt())
+                                .build();
+                        grades.add(grade);
+                    }
+                }
+
+                break;
+
+            case "semester":
+                for (Grade g : student.getGrades()) {
+                    if (g.getSubject().getSemester().name().toLowerCase().equals(query.toLowerCase())) {
+
+                        GradeTeacherView teacher = GradeTeacherView
+                                .builder()
+                                .teacherID(g.getCreatedBy().getId())
+                                .name(g.getCreatedBy().getName())
+                                .surname(g.getCreatedBy().getSurname())
+                                .build();
+
+                        GradeView grade = GradeView
+                                .builder()
+                                .gradeID(g.getId())
+                                .value(g.getValue())
+                                .type(g.getType())
+                                .subject(g.getSubject().getName())
+                                .semester(g.getSubject().getSemester())
+                                .createdAt(g.getCreatedAt())
+                                .createdBy(teacher)
+                                .build();
+                        grades.add(grade);
+                    }
+                }
+
+                break;
+
+            case "type":
+                for (Grade g : student.getGrades()) {
+                    if (g.getType().name().toLowerCase().equals(query.toLowerCase())) {
+
+                        GradeTeacherView teacher = GradeTeacherView
+                                .builder()
+                                .teacherID(g.getCreatedBy().getId())
+                                .name(g.getCreatedBy().getName())
+                                .surname(g.getCreatedBy().getSurname())
+                                .build();
+
+                        GradeView grade = GradeView
+                                .builder()
+                                .gradeID(g.getId())
+                                .value(g.getValue())
+                                .subject(g.getSubject().getName())
+                                .semester(g.getSubject().getSemester())
+                                .type(g.getType())
+                                .createdBy(teacher)
+                                .createdAt(g.getCreatedAt())
+                                .build();
+                        grades.add(grade);
+                    }
+                }
+
+                break;
+
+            case "teacher":
+                for (Grade g : student.getGrades()) {
+                    if (g.getCreatedBy().getName().toLowerCase().startsWith(query.toLowerCase()) || g.getCreatedBy().getSurname().startsWith(query.toLowerCase())) {
+
+                        GradeTeacherView teacher = GradeTeacherView
+                                .builder()
+                                .teacherID(g.getCreatedBy().getId())
+                                .name(g.getCreatedBy().getName())
+                                .surname(g.getCreatedBy().getSurname())
+                                .build();
+
+                        GradeView grade = GradeView
+                                .builder()
+                                .gradeID(g.getId())
+                                .value(g.getValue())
+                                .semester(g.getSubject().getSemester())
+                                .subject(g.getSubject().getName())
+                                .type(g.getType())
+                                .createdAt(g.getCreatedAt())
+                                .createdBy(teacher)
+                                .build();
+                        grades.add(grade);
+                    }
+                }
+
+                break;
+
+            case "date":
+                for (Grade g : student.getGrades()) {
+                    if (g.getCreatedAt().toString().startsWith(query)) {
+
+                        GradeTeacherView teacher = GradeTeacherView
+                                .builder()
+                                .teacherID(g.getCreatedBy().getId())
+                                .name(g.getCreatedBy().getName())
+                                .surname(g.getCreatedBy().getSurname())
+                                .build();
+
+                        GradeView grade = GradeView
+                                .builder()
+                                .gradeID(g.getId())
+                                .value(g.getValue())
+                                .subject(g.getSubject().getName())
+                                .type(g.getType())
+                                .semester(g.getSubject().getSemester())
+                                .createdBy(teacher)
+                                .createdAt(g.getCreatedAt())
+                                .build();
+                        grades.add(grade);
+                    }
+                }
+
+                break;
+
+            default:
+                break;
+        }
+
+        return grades;
     }
 }
