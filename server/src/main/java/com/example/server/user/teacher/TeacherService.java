@@ -529,6 +529,113 @@ public class TeacherService {
         return String.format("Student %s %s received a grade %d.", s.getName(), s.getSurname(), grade.getValue());
     }
 
+    public String updateLectureStudentGrade(Long teacherID, Long deptID, Long subjectID, Long lectureID, Long studentID, Long gradeID, int value) {
+        Teacher teacher = repository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        Department department = null;
+        Subject subject = null;
+        Lecture lecture = null;
+        Student student = null;
+        Grade grade = null;
+
+        for (Department d : teacher.getDepartments()) {
+            if (d.getId().equals(deptID)) {
+                department = d;
+            }
+        }
+
+        for (Subject s : department.getSubjects()) {
+            if (s.getId().equals(subjectID)) {
+                subject = s;
+            }
+        }
+
+        for (Lecture l : subject.getLectures()) {
+            if (l.getId().equals(lectureID)) {
+                lecture = l;
+            }
+        }
+
+        for (Student s : lecture.getDept().getStudents()) {
+            if (s.getId().equals(studentID)) {
+                student = s;
+            }
+        }
+
+        for (Grade g : student.getGrades()) {
+            if (g.getId().equals(gradeID)) {
+                grade = g;
+            }
+        }
+
+        grade.setValue(value);
+        grade.setUpdatedAt(new Date(System.currentTimeMillis()));
+        grade.setUpdatedBy(teacher.getUser());
+        gradeRepository.save(grade);
+
+        Email email = Email
+                .builder()
+                .to(grade.getStudent().getParent().getEmail())
+                .subject(String.format("%s %s - Grade Update", grade.getStudent().getName(), grade.getStudent().getSurname()))
+                .text(String.format("%s %s's grade was updated to %d by %s.", grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue(), grade.getUpdatedBy().getUsername()))
+                .build();
+        emailService.sendEmail(email);
+
+        logger.info(String.format("%s updated %s %s's grade to %d.", grade.getUpdatedBy().getUsername(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue()));
+
+        return String.format("%s updated %s %s's grade to %d.", grade.getUpdatedBy().getUsername(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue());
+    }
+
+    public String deleteLectureStudentGrade(Long teacherID, Long deptID, Long subjectID, Long lectureID, Long studentID, Long gradeID) {
+        Teacher teacher = repository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        Department department = null;
+        Subject subject = null;
+        Lecture lecture = null;
+        Student student = null;
+        Grade grade = null;
+
+        for (Department d : teacher.getDepartments()) {
+            if (d.getId().equals(deptID)) {
+                department = d;
+            }
+        }
+
+        for (Subject s : department.getSubjects()) {
+            if (s.getId().equals(subjectID)) {
+                subject = s;
+            }
+        }
+
+        for (Lecture l : subject.getLectures()) {
+            if (l.getId().equals(lectureID)) {
+                lecture = l;
+            }
+        }
+
+        for (Student s : lecture.getDept().getStudents()) {
+            if (s.getId().equals(studentID)) {
+                student = s;
+            }
+        }
+
+        for (Grade g : student.getGrades()) {
+            if (g.getId().equals(gradeID)) {
+                grade = g;
+            }
+        }
+
+        Email email = Email
+                .builder()
+                .to(grade.getStudent().getParent().getEmail())
+                .subject(String.format("%s %s - Grade Removal", grade.getStudent().getName(), grade.getStudent().getSurname()))
+                .text(String.format("%s %s removed %s %s's grade %d from %s.\nDate: %s", teacher.getName(), teacher.getSurname(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue(), grade.getSubject().getName(), new Date(System.currentTimeMillis()).toString()))
+                .build();
+        emailService.sendEmail(email);
+
+        logger.info(String.format("%s %s removed %s %s's grade %d from %s.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), grade.getValue(), grade.getSubject().getName()));
+
+        return String.format("%s %s removed %s %s's grade %d from %s.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), grade.getValue(), grade.getSubject().getName());
+    }
+
     public String updateTeacher(Long id, TeacherUpdateRequest request) {
         Teacher teacher = repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Teacher not found"));
 

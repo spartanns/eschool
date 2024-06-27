@@ -281,13 +281,38 @@ public class TeacherController {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-/*
-    @PatchMapping("/{teacherID}/departments/{deptID}/lectures/{lectureID}/students/{studentID}/grades/new") @PreAuthorize("hasAuthority('manager:update')")
-    ResponseEntity<String> addLectureStudentGrade(@PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long lectureID, @PathVariable Long studentID, @RequestParam int value, @RequestParam Type type) {
+
+    @PatchMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures/{lectureID}/students/{studentID}/grades/{gradeID}/update") @PreAuthorize("hasAuthority('manager:update')")
+    ResponseEntity<?> editLectureStudentGrade(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID, @PathVariable Long lectureID, @PathVariable Long studentID, @PathVariable Long gradeID, @RequestParam int value) {
         try {
-            return new ResponseEntity<String>(service.updateLectureStudentGrades(teacherID, deptID, lectureID, studentID, value, type), HttpStatus.CREATED);
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Teacher teacher = service.readTeacher(teacherID);
+            Grade grade = gradeService.readGrade(gradeID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername()) && user.getUsername().equals(grade.getCreatedBy().getUser().getUsername())) {
+                return new ResponseEntity<String>(service.updateLectureStudentGrade(teacherID, deptID, subjectID, lectureID, studentID, gradeID, value), HttpStatus.CREATED);
+            }
+
+            return new ResponseEntity<String>("[UNAUHTORIZED]", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    */
+    }
+
+    @DeleteMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures/{lectureID}/students/{studentID}/grades/{gradeID}/delete") @PreAuthorize("hasAuthority('manager:delete')")
+    ResponseEntity<String> removeLectureStudentGrade(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID, @PathVariable Long lectureID, @PathVariable Long studentID, @PathVariable Long gradeID) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Teacher teacher = service.readTeacher(teacherID);
+            Grade grade = gradeService.readGrade(gradeID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername()) && user.getUsername().equals(grade.getCreatedBy().getUser().getUsername())) {
+                return new ResponseEntity<String>(service.deleteLectureStudentGrade(teacherID, deptID, subjectID, lectureID, studentID, gradeID), HttpStatus.NO_CONTENT);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
