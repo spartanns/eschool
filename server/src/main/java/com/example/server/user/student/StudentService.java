@@ -300,7 +300,7 @@ public class StudentService {
 
             case "teacher":
                 for (Grade g : student.getGrades()) {
-                    if (g.getCreatedBy().getName().toLowerCase().startsWith(query.toLowerCase()) || g.getCreatedBy().getSurname().startsWith(query.toLowerCase())) {
+                    if (g.getCreatedBy().getName().toLowerCase().startsWith(query.toLowerCase()) || g.getCreatedBy().getSurname().toLowerCase().startsWith(query.toLowerCase())) {
 
                         GradeTeacherView teacher = GradeTeacherView
                                 .builder()
