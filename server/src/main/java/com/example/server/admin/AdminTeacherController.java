@@ -50,6 +50,15 @@ public class AdminTeacherController {
         }
     }
 
+    @PatchMapping("/{teacherID}/departments/add") @PreAuthorize("hasAuthority('admin:update')")
+    ResponseEntity<String> addDeptToTeacher(@PathVariable Long teacherID, @RequestParam Long deptID) {
+        try {
+            return new ResponseEntity<String>(service.updateTeacherDept(teacherID, deptID), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @DeleteMapping("/{id}/delete") @PreAuthorize("hasAuthority('admin:delete')")
     ResponseEntity<String> deleteSingleTeacher(@PathVariable Long id) {
         try {

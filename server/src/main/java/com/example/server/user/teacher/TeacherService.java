@@ -78,6 +78,21 @@ public class TeacherService {
         return repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Teacher not found!"));
     }
 
+    public String updateTeacherDept(Long teacherID, Long deptID) {
+        Teacher teacher = repository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        Department department = deptRepository.findById(deptID).orElseThrow(() -> new UsernameNotFoundException("Department not found."));
+
+        department.getTeachers().add(teacher);
+        deptRepository.save(department);
+
+        teacher.getDepartments().add(department);
+        repository.save(teacher);
+
+        logger.info(String.format("Teacher %s %s added to department %s.", teacher.getName(), teacher.getSurname(), department.getName()));
+
+        return String.format("Teacher %s %s added to department %s.", teacher.getName(), teacher.getSurname(), department.getName());
+    }
+
     public List<SingleDeptView> readDepartments(Long id) {
         Teacher teacher = repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("User not found."));
         List<SingleDeptView> depts = new ArrayList<>();
@@ -632,6 +647,8 @@ public class TeacherService {
         emailService.sendEmail(email);
 
         logger.info(String.format("%s %s removed %s %s's grade %d from %s.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), grade.getValue(), grade.getSubject().getName()));
+
+        gradeRepository.delete(grade);
 
         return String.format("%s %s removed %s %s's grade %d from %s.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), grade.getValue(), grade.getSubject().getName());
     }
