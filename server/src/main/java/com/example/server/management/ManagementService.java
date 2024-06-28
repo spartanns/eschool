@@ -1,7 +1,7 @@
 package com.example.server.management;
 
-import com.example.server.user.email.Email;
-import com.example.server.user.email.EmailService;
+import com.example.server.util.email.Email;
+import com.example.server.util.email.EmailService;
 import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentRepository;
 import lombok.RequiredArgsConstructor;

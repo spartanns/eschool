@@ -1,5 +1,6 @@
 package com.example.server.user.student.dao;
 
+import com.example.server.management.feedback.dao.FeedbackView;
 import com.example.server.management.grade.dao.GradeView;
 import com.example.server.security.Views;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -19,4 +20,5 @@ public class PrivateStudentView {
     private @JsonView(Views.Public.class) int attended;
     private @JsonView(Views.Public.class) int unattended;
     private @JsonView(Views.Public.class) List<GradeView> grades;
+    private @JsonView(Views.Public.class) List<FeedbackView> feedbacks;
 }

@@ -1,4 +1,4 @@
-package com.example.server.user.email;
+package com.example.server.util.email;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

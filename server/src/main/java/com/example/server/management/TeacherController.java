@@ -4,6 +4,9 @@ import com.example.server.admin.department.DepartmentService;
 import com.example.server.admin.department.dao.SingleDeptView;
 import com.example.server.config.JwtService;
 import com.example.server.admin.department.Department;
+import com.example.server.management.feedback.Feedback;
+import com.example.server.management.feedback.FeedbackService;
+import com.example.server.management.feedback.dto.FeedbackRequest;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.GradeService;
 import com.example.server.management.grade.Type;
@@ -42,6 +45,7 @@ public class TeacherController {
     private final DepartmentService deptService;
     private final LectureService lectureService;
     private final StudentService studentService;
+    private final FeedbackService feedbackService;
     private final JwtService jwtService;
 
     @GetMapping("/{id}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Public.class)
@@ -323,6 +327,22 @@ public class TeacherController {
 
             if (user.getUsername().equals(teacher.getUser().getUsername()) && user.getUsername().equals(grade.getCreatedBy().getUser().getUsername())) {
                 return new ResponseEntity<String>(gradeService.deleteLectureStudentGrade(teacherID, deptID, subjectID, lectureID, studentID, gradeID), HttpStatus.NO_CONTENT);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures/{lectureID}/students/{studentID}/feedbacks/new") @PreAuthorize("hasAuthority('manager:create')")
+    ResponseEntity<?> addStudentFeedback(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID, @PathVariable Long lectureID, @PathVariable Long studentID, @RequestBody FeedbackRequest request) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Teacher teacher = service.readTeacher(teacherID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+                return new ResponseEntity<String>(feedbackService.createFeedback(teacherID, studentID, request), HttpStatus.CREATED);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);

@@ -1,14 +1,16 @@
 package com.example.server.user.student;
 
 import com.example.server.admin.department.Department;
+import com.example.server.management.feedback.Feedback;
+import com.example.server.management.feedback.dao.FeedbackView;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.dao.GradeView;
 import com.example.server.management.lecture.Lecture;
 import com.example.server.management.subject.Subject;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
-import com.example.server.user.email.Email;
-import com.example.server.user.email.EmailService;
+import com.example.server.util.email.Email;
+import com.example.server.util.email.EmailService;
 import com.example.server.user.parent.Parent;
 import com.example.server.user.parent.ParentRepository;
 import com.example.server.user.student.dao.PrivateStudentView;
@@ -107,6 +109,7 @@ public class StudentService {
     public PrivateStudentView readPrivateStudentView(Long id) {
         Student student = readStudent(id);
         List<GradeView> grades = new ArrayList<>();
+        List<FeedbackView> feedbacks = new ArrayList<>();
 
         for (Grade g : student.getGrades()) {
 
@@ -129,12 +132,33 @@ public class StudentService {
             grades.add(grade);
         }
 
+        for (Feedback f : student.getFeedbacks()) {
+
+            GradeTeacherView teacher = GradeTeacherView
+                    .builder()
+                    .teacherID(f.getCreatedBy().getId())
+                    .name(f.getCreatedBy().getName())
+                    .surname(f.getCreatedBy().getSurname())
+                    .build();
+
+            FeedbackView feedback = FeedbackView
+                    .builder()
+                    .id(f.getId())
+                    .type(f.getType())
+                    .text(f.getText())
+                    .createdAt(f.getCreatedAt())
+                    .createdBy(teacher)
+                    .build();
+            feedbacks.add(feedback);
+        }
+
         PrivateStudentView view = PrivateStudentView
                 .builder()
                 .id(student.getId())
                 .name(student.getName())
                 .surname(student.getSurname())
                 .rating(student.getRating())
+                .feedbacks(feedbacks)
                 .attended(student.getAttended())
                 .unattended(student.getUnattended())
                 .grades(grades)
@@ -196,10 +220,12 @@ public class StudentService {
                         .createdAt(g.getCreatedAt())
                         .createdBy(teacherView)
                         .build();
+
+                return grade;
             }
         }
 
-        return grade;
+        throw new UsernameNotFoundException("Grade not found.");
     }
 
     public List<GradeView> searchStudentGrades(Long studentID, String filterBy, String query) {

@@ -1,4 +1,4 @@
-package com.example.server.management;
+package com.example.server.admin;
 
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.SubjectService;

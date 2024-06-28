@@ -2,23 +2,11 @@ package com.example.server.user.teacher;
 
 import com.example.server.admin.department.Department;
 import com.example.server.admin.department.DepartmentRepository;
-import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.GradeRepository;
-import com.example.server.management.grade.Type;
-import com.example.server.management.grade.dao.GradeView;
-import com.example.server.management.lecture.Lecture;
-import com.example.server.management.lecture.LectureRepository;
-import com.example.server.management.lecture.dao.LectureView;
-import com.example.server.management.subject.Subject;
-import com.example.server.management.subject.SubjectRepository;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
-import com.example.server.user.email.Email;
-import com.example.server.user.email.EmailService;
-import com.example.server.user.student.Student;
+import com.example.server.util.email.EmailService;
 import com.example.server.user.student.StudentRepository;
-import com.example.server.user.student.dao.TeacherStudentView;
-import com.example.server.user.teacher.dao.GradeTeacherView;
 import com.example.server.user.teacher.dto.TeacherRequest;
 import com.example.server.user.teacher.dto.TeacherUpdateRequest;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +16,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Service @RequiredArgsConstructor
