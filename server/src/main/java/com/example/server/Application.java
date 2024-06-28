@@ -7,8 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class Application {
 
 	// TODO: Grade Search
-	// TODO: Student Rating
-	// TODO: Student Comments
+	// TODO: Student Feedback
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}

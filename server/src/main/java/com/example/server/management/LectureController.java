@@ -21,15 +21,6 @@ public class LectureController {
     private final LectureService service;
     private final GradeService gradeService;
 
-    @PostMapping("/new") @PreAuthorize("hasAuthority('manager:create')")
-    ResponseEntity<?> addNewLecture(@Valid @RequestBody LectureRequest request) {
-        try {
-            return new ResponseEntity<Lecture>(service.createLecture(request), HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
-
     @GetMapping @PreAuthorize("hasAuthority('manager:read')")
     ResponseEntity<List<Lecture>> getAllLectures() {
         return new ResponseEntity<List<Lecture>>(service.index(), HttpStatus.OK);

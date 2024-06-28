@@ -1,13 +1,21 @@
 package com.example.server.user.student;
 
+import com.example.server.admin.department.Department;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.dao.GradeView;
+import com.example.server.management.lecture.Lecture;
+import com.example.server.management.subject.Subject;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
+import com.example.server.user.email.Email;
+import com.example.server.user.email.EmailService;
 import com.example.server.user.parent.Parent;
 import com.example.server.user.parent.ParentRepository;
 import com.example.server.user.student.dao.PrivateStudentView;
+import com.example.server.user.student.dao.TeacherStudentView;
 import com.example.server.user.student.dto.StudentRequest;
+import com.example.server.user.teacher.Teacher;
+import com.example.server.user.teacher.TeacherRepository;
 import com.example.server.user.teacher.dao.GradeTeacherView;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -25,6 +33,8 @@ public class StudentService {
     private final StudentRepository repository;
     private final UserRepository userRepository;
     private final ParentRepository parentRepository;
+    private final TeacherRepository teacherRepository;
+    private final EmailService emailService;
     private final PasswordEncoder encoder;
     private Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
@@ -50,13 +60,20 @@ public class StudentService {
                 .unattended(0)
                 .build();
 
+
+        repository.save(student);
+
         logger.info(String.format("Student %s %s with studentID %d created.", student.getName(), student.getSurname(), student.getId()));
 
-        return repository.save(student);
+        return student;
     }
 
     public List<Student> index() {
         return repository.findAll();
+    }
+
+    public Student saveStudent(Student student) {
+        return repository.save(student);
     }
 
     public Student updateParent(Long studentID, Long parentID) {
@@ -357,5 +374,124 @@ public class StudentService {
         }
 
         return grades;
+    }
+
+    public List<Student> readLectureStudents(Long teacherID, Long deptID, Long subjectID, Long lectureID) {
+        Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        Lecture lecture = null;
+
+        for (Lecture lecture1 : teacher.getLectures()) {
+            if (lecture1.getId().equals(lectureID)) {
+                lecture = lecture1;
+            }
+        }
+
+        List<Student> students = lecture.getDept().getStudents();
+
+        return students;
+    }
+
+    public TeacherStudentView readLectureStudent(Long teacherID, Long deptID, Long subjectID, Long lectureID, Long studentID) {
+        Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        Department dept = null;
+        Lecture l = null;
+        Student s = null;
+        List<GradeView> subjectGrades = new ArrayList<>();
+
+        for (Department department : teacher.getDepartments()) {
+            if (department.getId().equals(deptID)) {
+                dept = department;
+            }
+        }
+
+        for (Lecture lecture : dept.getLectures()) {
+            if (lecture.getId().equals(lectureID)) {
+                l = lecture;
+            }
+        }
+
+        Subject subject = l.getSubject();
+
+        for (Student student : l.getDept().getStudents()) {
+            if (student.getId().equals(studentID)) {
+                s = student;
+            }
+        }
+
+        for (Grade grade : s.getGrades()) {
+            GradeTeacherView teacherView = GradeTeacherView
+                    .builder()
+                    .teacherID(grade.getCreatedBy().getId())
+                    .name(grade.getCreatedBy().getName())
+                    .surname(grade.getCreatedBy().getSurname())
+                    .build();
+
+            GradeView view = GradeView
+                    .builder()
+                    .gradeID(grade.getId())
+                    .value(grade.getValue())
+                    .subject(grade.getSubject().getName())
+                    .type(grade.getType())
+                    .createdAt(grade.getCreatedAt())
+                    .createdBy(teacherView)
+                    .semester(grade.getSubject().getSemester())
+                    .build();
+
+            if (grade.getSubject().equals(subject)) {
+                subjectGrades.add(view);
+            }
+        }
+
+        TeacherStudentView view = TeacherStudentView
+                .builder()
+                .id(s.getId())
+                .name(s.getName())
+                .surname(s.getSurname())
+                .grades(subjectGrades)
+                .build();
+
+        return view;
+    }
+
+    public String markStudentPresent(Long id) {
+        Student student = readStudent(id);
+        student.setAttended(student.getAttended() + 1);
+        repository.save(student);
+
+        return String.format("Student %s %s marked as present.", student.getName(), student.getSurname());
+    }
+
+    public String markStudentMissing(Long id) {
+        Student student = readStudent(id);
+        student.setUnattended(student.getUnattended() + 1);
+        repository.save(student);
+
+        if (student.getUnattended() > 0 && student.getUnattended() % 3 == 0) {
+            student.setRating(student.getRating() - 1);
+            repository.save(student);
+
+            Email email = Email
+                    .builder()
+                    .to(student.getParent().getEmail())
+                    .subject(String.format("%s %s - Rating Decreased", student.getName(), student.getSurname()))
+                    .text(String.format("%s %s's school rating decreased.\nReason: skipping classes", student.getName(), student.getSurname()))
+                    .build();
+
+            emailService.sendEmail(email);
+        }
+
+        if (student.getRating() == 2) {
+            Email email = Email
+                    .builder()
+                    .to(student.getParent().getEmail())
+                    .subject(String.format("%s %s - Expulsion Notice", student.getName(), student.getSurname()))
+                    .text(String.format("Student %s %s is about to be expelled from school.\nReason: low school rating", student.getName(), student.getSurname()))
+                    .build();
+            emailService.sendEmail(email);
+
+            logger.warn(String.format("Student %s %s is about to be expelled from school.\nReason: low school rating", student.getName(), student.getSurname()));
+        }
+
+        return String.format("Student %s %s marked as missing.", student.getName(), student.getSurname());
     }
 }

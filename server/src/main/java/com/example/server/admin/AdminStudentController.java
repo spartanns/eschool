@@ -57,4 +57,17 @@ public class AdminStudentController {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+    @PatchMapping("/{id}/rating") @PreAuthorize("hasAuthority('admin:update')")
+    ResponseEntity<String> setRating(@PathVariable Long id, @RequestParam int rating) {
+        try {
+            Student student = service.readStudent(id);
+            student.setRating(rating);
+            service.saveStudent(student);
+
+            return new ResponseEntity<String>(String.format("Student %s %s's rating set to %d", student.getName(), student.getSurname(), rating), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
