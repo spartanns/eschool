@@ -1,5 +1,7 @@
 package com.example.server.user.parent;
 
+import com.example.server.management.feedback.Feedback;
+import com.example.server.management.feedback.dao.FeedbackView;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.dao.GradeView;
 import com.example.server.user.User;
@@ -9,7 +11,6 @@ import com.example.server.user.parent.dto.ParentRequest;
 import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentRepository;
 import com.example.server.user.student.dao.ParentStudentView;
-import com.example.server.user.student.dao.PrivateStudentView;
 import com.example.server.user.teacher.dao.GradeTeacherView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -56,6 +57,7 @@ public class ParentService {
 
     public PrivateParentView readPPV(Parent parent) {
         List<ParentStudentView> students = new ArrayList<>();
+        List<FeedbackView> feedbacks = new ArrayList<>();
 
         for (Student s : parent.getStudents()) {
             List<GradeView> grades = new ArrayList<>();
@@ -79,13 +81,36 @@ public class ParentService {
                         .semester(g.getSubject().getSemester())
                         .build();
                 grades.add(grade);
+
+                for (Feedback f : s.getFeedbacks()) {
+                    GradeTeacherView t = GradeTeacherView
+                            .builder()
+                            .teacherID(g.getId())
+                            .name(g.getCreatedBy().getName())
+                            .surname(g.getCreatedBy().getSurname())
+                            .build();
+                    FeedbackView feedback = FeedbackView
+                            .builder()
+                            .id(f.getId())
+                            .type(f.getType())
+                            .text(f.getText())
+                            .createdBy(t)
+                            .createdAt(f.getCreatedAt())
+                            .build();
+                    feedbacks.add(feedback);
+                }
             }
+
             ParentStudentView student = ParentStudentView
                     .builder()
                     .id(s.getId())
                     .name(s.getName())
                     .surname(s.getSurname())
                     .grades(grades)
+                    .feedbacks(feedbacks)
+                    .attended(s.getAttended())
+                    .unattended(s.getUnattended())
+                    .rating(s.getRating())
                     .build();
             students.add(student);
         }
@@ -109,7 +134,7 @@ public class ParentService {
         return view.getStudents();
     }
 
-    public ParentStudentView singleParentStudent(Parent parent, Long studentID) {
+    public ParentStudentView readParentStudent(Parent parent, Long studentID) {
         PrivateParentView p = readPPV(parent);
 
         for (ParentStudentView s : p.getStudents()) {
@@ -238,5 +263,135 @@ public class ParentService {
         }
 
         return result;
+    }
+
+    public List<GradeView> readParentStudentGrades(Long parentID, Long studentID) {
+        Parent parent = readParent(parentID);
+        List<GradeView> grades = new ArrayList<>();
+
+        for (Student s : parent.getStudents()) {
+            if (s.getId().equals(studentID)) {
+               for (Grade g : s.getGrades()) {
+                   GradeTeacherView teacher = GradeTeacherView
+                           .builder()
+                           .teacherID(g.getCreatedBy().getId())
+                           .name(g.getCreatedBy().getName())
+                           .surname(g.getCreatedBy().getSurname())
+                           .build();
+
+                   GradeView grade = GradeView
+                           .builder()
+                           .gradeID(g.getId())
+                           .value(g.getValue())
+                           .subject(g.getSubject().getName())
+                           .semester(g.getSubject().getSemester())
+                           .type(g.getType())
+                           .createdAt(g.getCreatedAt())
+                           .createdBy(teacher)
+                           .build();
+                   grades.add(grade);
+               }
+               return grades;
+            }
+        }
+        throw new UsernameNotFoundException("Student not found.");
+    }
+
+    public List<FeedbackView> readParentStudentFeedbacks(Long parentID, Long studentID) {
+        Parent parent = repository.findById(parentID).orElseThrow(() -> new UsernameNotFoundException("Parent not found."));
+        List<FeedbackView> feedbacks = new ArrayList<>();
+
+        for (Student s : parent.getStudents()) {
+            if (s.getId().equals(studentID)) {
+                for (Feedback f : s.getFeedbacks()) {
+                    GradeTeacherView teacher = GradeTeacherView
+                            .builder()
+                            .teacherID(f.getCreatedBy().getId())
+                            .name(f.getCreatedBy().getName())
+                            .surname(f.getCreatedBy().getSurname())
+                            .build();
+                    FeedbackView feedback = FeedbackView
+                            .builder()
+                            .id(f.getId())
+                            .type(f.getType())
+                            .text(f.getText())
+                            .createdAt(f.getCreatedAt())
+                            .createdBy(teacher)
+                            .build();
+                    feedbacks.add(feedback);
+                }
+
+                return feedbacks;
+            }
+        }
+
+        throw new UsernameNotFoundException("Student not found.");
+    }
+
+    public GradeView readParentStudentGrade(Long parentID, Long studentID, Long gradeID) {
+        Parent parent = readParent(parentID);
+
+        for (Student s : parent.getStudents()) {
+            if (s.getId().equals(studentID)) {
+                for (Grade g : s.getGrades()) {
+                    if (g.getId().equals(gradeID)) {
+                        GradeTeacherView teacher = GradeTeacherView
+                                .builder()
+                                .teacherID(g.getCreatedBy().getId())
+                                .name(g.getCreatedBy().getName())
+                                .surname(g.getCreatedBy().getSurname())
+                                .build();
+
+
+                        GradeView grade = GradeView
+                                .builder()
+                                .gradeID(g.getId())
+                                .value(g.getValue())
+                                .subject(g.getSubject().getName())
+                                .semester(g.getSubject().getSemester())
+                                .type(g.getType())
+                                .createdAt(g.getCreatedAt())
+                                .createdBy(teacher)
+                                .build();
+
+                        return grade;
+                    }
+                }
+            }
+        }
+
+        throw new UsernameNotFoundException("Grade not found.");
+    }
+
+    public FeedbackView readParentStudentFeedback(Long parentID, Long studentID, Long feedbackID) {
+        Parent parent = readParent(parentID);
+
+        for (Student s : parent.getStudents()) {
+            if (s.getId().equals(studentID)) {
+                for (Feedback f : s.getFeedbacks()) {
+                    if (f.getId().equals(feedbackID)) {
+                        GradeTeacherView teacher = GradeTeacherView
+                                .builder()
+                                .teacherID(f.getCreatedBy().getId())
+                                .name(f.getCreatedBy().getName())
+                                .surname(f.getCreatedBy().getSurname())
+                                .build();
+
+                        FeedbackView feedback = FeedbackView
+                                .builder()
+                                .id(f.getId())
+                                .type(f.getType())
+                                .text(f.getText())
+                                .createdAt(f.getCreatedAt())
+                                .createdBy(teacher)
+                                .build();
+
+                        return feedback;
+                    }
+                }
+            }
+        }
+
+        throw new UsernameNotFoundException("Feedback not found.");
     }
 }

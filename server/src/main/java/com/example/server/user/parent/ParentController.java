@@ -1,6 +1,7 @@
 package com.example.server.user.parent;
 
 import com.example.server.config.JwtService;
+import com.example.server.management.feedback.dao.FeedbackView;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.dao.GradeView;
 import com.example.server.security.Views;
@@ -77,7 +78,7 @@ public class ParentController {
             Parent parent = service.readParent(parentID);
 
             if (user.getUsername().equals(parent.getUser().getUsername())) {
-                return new ResponseEntity<ParentStudentView>(service.singleParentStudent(parent, studentID), HttpStatus.OK);
+                return new ResponseEntity<ParentStudentView>(service.readParentStudent(parent, studentID), HttpStatus.OK);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
@@ -99,6 +100,70 @@ public class ParentController {
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{parentID}/students/{studentID}/grades") @PreAuthorize("hasAuthority('parent:read')") @JsonView(Views.Public.class)
+    ResponseEntity<?> viewParentStudentGrades(@RequestHeader("Authorization") String token, @PathVariable Long parentID, @PathVariable Long studentID) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Parent parent = service.readParent(parentID);
+
+            if (user.getUsername().equals(parent.getUser().getUsername())) {
+                return new ResponseEntity<List<GradeView>>(service.readParentStudentGrades(parentID, studentID), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{parentID}/students/{studentID}/feedbacks") @PreAuthorize("hasAuthority('parent:read')") @JsonView(Views.Public.class)
+    ResponseEntity<?> viewParentStudentFeedbacks(@RequestHeader("Authorization") String token, @PathVariable Long parentID, @PathVariable Long studentID) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Parent parent = service.readParent(parentID);
+
+            if (user.getUsername().equals(parent.getUser().getUsername())) {
+                return new ResponseEntity<List<FeedbackView>>(service.readParentStudentFeedbacks(parentID, studentID), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{parentID}/students/{studentID}/grades/{gradeID}") @PreAuthorize("hasAuthority('parent:read')") @JsonView(Views.Private.class)
+    ResponseEntity<?> viewParentStudentGrade(@RequestHeader("Authorization") String token, @PathVariable Long parentID, @PathVariable Long studentID, @PathVariable Long gradeID) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Parent parent = service.readParent(parentID);
+
+            if (user.getUsername().equals(parent.getUser().getUsername())) {
+                return new ResponseEntity<GradeView>(service.readParentStudentGrade(parentID, studentID, gradeID), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @GetMapping("/{parentID}/students/{studentID}/feedbacks/{feedbackID}") @PreAuthorize("hasAuthority('parent:read')") @JsonView(Views.Private.class)
+    ResponseEntity<?> viewParentStudentFeedback(@RequestHeader("Authorization") String token, @PathVariable Long parentID, @PathVariable Long studentID, @PathVariable Long feedbackID) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Parent parent = service.readParent(parentID);
+
+            if (user.getUsername().equals(parent.getUser().getUsername())) {
+                return new ResponseEntity<FeedbackView>(service.readParentStudentFeedback(parentID, studentID, feedbackID), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
 }
