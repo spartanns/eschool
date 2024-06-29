@@ -4,6 +4,8 @@ server/target/
 !**/server/src/main/**/target/
 !**/server/src/test/**/target/
 
+.idea
+
 ### STS ###
 server/.apt_generated
 server/.classpath
