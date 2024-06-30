@@ -5,6 +5,7 @@ import com.example.server.management.feedback.dao.FeedbackView;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.dao.GradeView;
 import com.example.server.management.lecture.dao.GradeLectureView;
+import com.example.server.user.Role;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
 import com.example.server.user.parent.dao.PrivateParentView;
@@ -36,7 +37,7 @@ public class ParentService {
                 .builder()
                 .username(request.getUsername())
                 .password(encoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(Role.PARENT)
                 .build();
         userRepository.save(user);
 

@@ -10,6 +10,7 @@ import com.example.server.management.lecture.Lecture;
 import com.example.server.management.lecture.LectureRepository;
 import com.example.server.management.lecture.dao.GradeLectureView;
 import com.example.server.management.subject.Subject;
+import com.example.server.user.Role;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
 import com.example.server.util.email.Email;
@@ -50,7 +51,7 @@ public class StudentService {
                 .builder()
                 .username(request.getUsername())
                 .password(encoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(Role.STUDENT)
                 .build();
         userRepository.save(user);
 

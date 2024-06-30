@@ -24,7 +24,6 @@ public class AuthenticationService {
                 .builder()
                 .username(request.getUsername())
                 .password(encoder.encode(request.getPassword()))
-                .role(request.getRole())
                 .build();
 
         repository.save(user);

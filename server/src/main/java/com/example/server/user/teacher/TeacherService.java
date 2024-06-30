@@ -8,13 +8,13 @@ import com.example.server.management.feedback.FeedbackRepository;
 import com.example.server.management.feedback.dao.TeacherFeedbackView;
 import com.example.server.management.feedback.dto.FeedbackRequest;
 import com.example.server.management.grade.Grade;
-import com.example.server.management.grade.GradeRepository;
 import com.example.server.management.grade.dao.TeacherGradeView;
 import com.example.server.management.lecture.Lecture;
 import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.lecture.dao.TeacherLectureView;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.dao.SingleSubjectView;
+import com.example.server.user.Role;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
 import com.example.server.user.student.Student;
@@ -22,7 +22,6 @@ import com.example.server.user.student.dao.GradeStudentView;
 import com.example.server.user.teacher.dao.TeacherView;
 import com.example.server.util.email.Email;
 import com.example.server.util.email.EmailService;
-import com.example.server.user.student.StudentRepository;
 import com.example.server.user.teacher.dto.TeacherRequest;
 import com.example.server.user.teacher.dto.TeacherUpdateRequest;
 import lombok.RequiredArgsConstructor;
@@ -47,12 +46,12 @@ public class TeacherService {
     private final Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
     public Teacher createTeacher(TeacherRequest request) {
-        // TODO: Better Automation?
+
         User user = User
                 .builder()
                 .username(request.getUsername())
                 .password(encoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(Role.MANAGER)
                 .build();
         userRepository.save(user);
 

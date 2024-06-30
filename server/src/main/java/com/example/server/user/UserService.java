@@ -29,11 +29,11 @@ public class UserService {
     }
 
     public User createUser(RegisterRequest request) {
+        // TODO: Role RequestParam
         User user = User
                 .builder()
                 .username(request.getUsername())
                 .password(encoder.encode(request.getPassword()))
-                .role(request.getRole())
                 .build();
         repository.save(user);
 
@@ -56,7 +56,6 @@ public class UserService {
 
         user.setUsername(request.getUsername());
         user.setPassword(encoder.encode(request.getPassword()));
-        user.setRole(request.getRole());
 
         repository.save(user);
 
