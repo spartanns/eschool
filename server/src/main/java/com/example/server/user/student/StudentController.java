@@ -14,14 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-/*
- *      TODO: Grades Search
- */
 
 @RestController @RequiredArgsConstructor
 @RequestMapping("/api/v1/students") @PreAuthorize("hasRole('STUDENT')")

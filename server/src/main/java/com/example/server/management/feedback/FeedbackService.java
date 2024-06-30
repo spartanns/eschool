@@ -1,7 +1,11 @@
 package com.example.server.management.feedback;
 
+import com.example.server.admin.department.Department;
 import com.example.server.management.feedback.dao.FeedbackView;
 import com.example.server.management.feedback.dto.FeedbackRequest;
+import com.example.server.management.lecture.Lecture;
+import com.example.server.management.lecture.LectureRepository;
+import com.example.server.management.subject.Subject;
 import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentRepository;
 import com.example.server.user.teacher.Teacher;
@@ -22,57 +26,72 @@ public class FeedbackService {
     private final FeedbackRepository repository;
     private final TeacherRepository teacherRepository;
     private final StudentRepository studentRepository;
+    private final LectureRepository lectureRepository;
     private final EmailService emailService;
     private Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
-    public String createFeedback(Long teacherID, Long studentID, FeedbackRequest request) {
+    public String createFeedback(Long teacherID, Long deptID, Long subjectID, Long lectureID, Long studentID, FeedbackRequest request) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
-        Student student = studentRepository.findById(studentID).orElseThrow(() -> new UsernameNotFoundException("Student not found."));
 
-        Feedback feedback = Feedback
-                .builder()
-                .type(request.getType())
-                .text(request.getText())
-                .createdAt(new Date(System.currentTimeMillis()))
-                .student(student)
-                .createdBy(teacher)
-                .build();
-        repository.save(feedback);
+        for (Department d : teacher.getDepartments()) {
+            if (d.getId().equals(deptID)) {
+                for (Subject s : d.getSubjects()) {
+                    if (s.getId().equals(subjectID)) {
+                        for (Lecture l : s.getLectures()) {
+                            if (l.getId().equals(lectureID)) {
+                                for (Student student : l.getAttendants()) {
+                                    if (student.getId().equals(studentID)) {
+                                        Feedback feedback = Feedback
+                                                .builder()
+                                                .type(request.getType())
+                                                .text(request.getText())
+                                                .createdBy(teacher)
+                                                .createdAt(new Date(System.currentTimeMillis()))
+                                                .student(student)
+                                                .lecture(l)
+                                                .build();
+                                        repository.save(feedback);
+                                        student.getFeedbacks().add(feedback);
 
-        teacher.getFeedbacks().add(feedback);
-        teacherRepository.save(teacher);
+                                        int count = 0;
 
-        student.getFeedbacks().add(feedback);
-        studentRepository.save(student);
+                                        for (Feedback f : student.getFeedbacks()) {
+                                            if (f.getType().equals(FeedbackType.NEGATIVE)) {
+                                                count++;
+                                            }
+                                        }
 
-        int count = 0;
+                                        if (count > 0 && count % 3 == 0) {
+                                            student.setRating(student.getRating() - 1);
 
-        for (Feedback f : student.getFeedbacks()) {
-            if (f.getType().equals(FeedbackType.NEGATIVE)) {
-                count++;
+                                            Email email = Email
+                                                    .builder()
+                                                    .to(student.getParent().getEmail())
+                                                    .subject(String.format("%s %s - Rating Decreased", student.getName(), student.getSurname()))
+                                                    .text(String.format("%s %s's school rating decreased to %d.\nReason: bad behaviour", student.getName(), student.getSurname(), student.getRating()))
+                                                    .build();
+                                            emailService.sendEmail(email);
+                                        }
+
+                                        studentRepository.save(student);
+                                        l.getFeedbacks().add(feedback);
+                                        lectureRepository.save(l);
+                                        teacher.getFeedbacks().add(feedback);
+                                        teacherRepository.save(teacher);
+
+                                        logger.info(String.format("%s %s gave %s %s a %s feedback.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), feedback.getType().name()));
+
+                                        return String.format("%s %s gave %s %s a %s feedback.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), feedback.getType().name());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        if (count > 0 && count % 3 == 0 && student.getRating() > 1) {
-            student.setRating(student.getRating() - 1);
-            studentRepository.save(student);
-
-            Email email = Email
-                    .builder()
-                    .to(student.getParent().getEmail())
-                    .subject(String.format("%s %s - Rating Decreased", student.getName(), student.getSurname()))
-                    .text(String.format("%s %s's school rating decreased to %d.\nReason: bad behaviour", student.getName(), student.getSurname(), student.getRating()))
-                    .build();
-
-            emailService.sendEmail(email);
-
-            logger.info(String.format("%s %s's school rating decreased to %d.\nReason: bad behaviour", student.getName(), student.getSurname(), student.getRating()));
-
-        }
-
-        logger.info(String.format("%s %s gave %s %s a %s feedback.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), feedback.getType().name()));
-
-        return String.format("%s %s gave %s %s a %s feedback.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), feedback.getType().name());
+        throw new UsernameNotFoundException("Student not found.");
     }
 
     public List<FeedbackView> readStudentFeedbacks(Long id) {

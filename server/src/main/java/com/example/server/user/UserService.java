@@ -2,6 +2,8 @@ package com.example.server.user;
 
 import com.example.server.auth.dto.RegisterRequest;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,7 @@ import java.util.List;
 public class UserService {
     private final UserRepository repository;
     private final PasswordEncoder encoder;
+    private Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
     public List<User> index() {
         return repository.findAll();
@@ -26,25 +29,26 @@ public class UserService {
     }
 
     public User createUser(RegisterRequest request) {
-        var user = User
+        User user = User
                 .builder()
                 .username(request.getUsername())
                 .password(encoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .build();
+        repository.save(user);
 
-        return repository.save(user);
+        logger.info(String.format("User with ID: %d created", user.getId()));
+
+        return user;
     }
 
     public String deleteUser(Long id) {
-            if (repository.findById(id) != null) {
-                var user = repository.findById(id);
-                repository.delete(user.orElseThrow(() -> new UsernameNotFoundException("User not found!")));
+        User user = readUser(id);
+        repository.delete(user);
 
-                return String.format("User with ID: %d deleted.", id);
-            }
+        logger.warn(String.format("User with ID: %d deleted.", user.getId()));
 
-            return "User not found.";
+        return String.format("User with ID: %d deleted.", user.getId());
     }
 
     public String updateUser(Long id, RegisterRequest request) {
@@ -55,6 +59,8 @@ public class UserService {
         user.setRole(request.getRole());
 
         repository.save(user);
+
+        logger.info(String.format("User with ID: %d updated.", user.getId()));
 
         return String.format("User with ID: %d successfully updated.", user.getId());
     }

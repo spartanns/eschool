@@ -15,5 +15,5 @@ public class TeacherStudentView {
     private @JsonView(Views.Public.class) Long id;
     private @JsonView(Views.Public.class) String name;
     private @JsonView(Views.Public.class) String surname;
-    private @JsonView(Views.Public.class) List<GradeView> grades;
+    private @JsonView(Views.General.class) List<GradeView> grades;
 }

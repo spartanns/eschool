@@ -1,6 +1,7 @@
 package com.example.server.management.grade.dao;
 
 import com.example.server.management.grade.Type;
+import com.example.server.management.lecture.dao.GradeLectureView;
 import com.example.server.management.subject.Semester;
 import com.example.server.security.Views;
 import com.example.server.user.teacher.dao.GradeTeacherView;
@@ -20,6 +21,8 @@ public class GradeView {
     private @JsonView(Views.Public.class) String subject;
     private @JsonView(Views.General.class) Type type;
     private @JsonView(Views.General.class) Semester semester;
-    private @JsonView(Views.Private.class) @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss") Date createdAt;
+    private @JsonView(Views.General.class) GradeLectureView lecture;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private @JsonView(Views.Private.class) GradeTeacherView createdBy;
+    private @JsonView(Views.Private.class)  Date createdAt;
 }

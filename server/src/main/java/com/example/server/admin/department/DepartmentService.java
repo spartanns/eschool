@@ -9,6 +9,7 @@ import com.example.server.management.subject.SubjectRepository;
 import com.example.server.management.subject.dao.SingleSubjectView;
 import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentRepository;
+import com.example.server.user.student.dao.GradeStudentView;
 import com.example.server.user.teacher.Teacher;
 import com.example.server.user.teacher.TeacherRepository;
 import lombok.RequiredArgsConstructor;
@@ -110,17 +111,27 @@ public class DepartmentService {
         List<SingleDeptView> depts = new ArrayList<>();
         List<SingleSubjectView> subjects = new ArrayList<>();
         List<LectureView> lectures = new ArrayList<>();
+        List<GradeStudentView> students = new ArrayList<>();
 
         for (Department d : teacher.getDepartments()) {
             for (Subject subject : d.getSubjects()) {
                 for (Lecture lecture : subject.getLectures()) {
+                    for (Student s : lecture.getAttendants()) {
+                        GradeStudentView student = GradeStudentView
+                                .builder()
+                                .id(s.getId())
+                                .name(s.getName())
+                                .surname(s.getSurname())
+                                .build();
+                        students.add(student);
+                    }
 
                     LectureView l = LectureView
                             .builder()
                             .id(lecture.getId())
                             .subject(lecture.getSubject().getName())
                             .teacher(String.format("%s %s", lecture.getTeacher().getName(), lecture.getTeacher().getSurname()))
-                            .students(lecture.getDept().getStudents())
+                            .attendants(students)
                             .build();
                     lectures.add(l);
                 }
@@ -149,46 +160,58 @@ public class DepartmentService {
 
     public SingleDeptView readTeacherDepartment(Long teacherID, Long deptID) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
-        Department d = null;
         List<SingleSubjectView> subjects = new ArrayList<>();
         List<LectureView> lectures = new ArrayList<>();
+        List<GradeStudentView> students = new ArrayList<>();
 
-        for (Department dept : teacher.getDepartments()) {
-            if (dept.getId().equals(deptID)) {
-                d = dept;
+        // TODO: Nesting
+
+        for (Department d : teacher.getDepartments()) {
+            if (d.getId().equals(deptID)) {
+                for (Student s : d.getStudents()) {
+                    GradeStudentView student = GradeStudentView
+                            .builder()
+                            .id(s.getId())
+                            .name(s.getName())
+                            .surname(s.getSurname())
+                            .build();
+                    students.add(student);
+                }
+
+                for (Subject s : d.getSubjects()) {
+                    for (Lecture l : s.getLectures()) {
+                        LectureView lecture = LectureView
+                                .builder()
+                                .id(l.getId())
+                                .date(l.getCreatedAt())
+                                .attendants(students)
+                                .teacher(String.format("%s %s", l.getTeacher().getName(), l.getTeacher().getSurname()))
+                                .subject(l.getSubject().getName())
+                                .build();
+                        lectures.add(lecture);
+                    }
+
+                    SingleSubjectView subject = SingleSubjectView
+                            .builder()
+                            .id(s.getId())
+                            .semester(s.getSemester())
+                            .name(s.getName())
+                            .lectures(lectures)
+                            .build();
+                    subjects.add(subject);
+                }
+
+                SingleDeptView dept = SingleDeptView
+                        .builder()
+                        .deptID(d.getId())
+                        .name(d.getName())
+                        .subjects(subjects)
+                        .build();
+
+                return dept;
             }
         }
 
-        for (Subject s : d.getSubjects()) {
-
-            SingleSubjectView subject = SingleSubjectView
-                    .builder()
-                    .id(s.getId())
-                    .name(s.getName())
-                    .semester(s.getSemester())
-                    .lectures(lectures)
-                    .build();
-            subjects.add(subject);
-        }
-
-        for (Lecture l : d.getLectures()) {
-
-            LectureView lecture = LectureView
-                    .builder()
-                    .id(l.getId())
-                    .teacher(String.format("%s %s", l.getTeacher().getName(), l.getTeacher().getSurname()))
-                    .students(l.getDept().getStudents())
-                    .build();
-            lectures.add(lecture);
-        }
-
-        SingleDeptView dept = SingleDeptView
-                .builder()
-                .deptID(d.getId())
-                .name(d.getName())
-                .subjects(subjects)
-                .build();
-
-        return dept;
+        throw new UsernameNotFoundException("Dept not found.");
     }
 }

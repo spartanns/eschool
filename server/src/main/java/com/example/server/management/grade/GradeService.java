@@ -6,7 +6,9 @@ import com.example.server.management.grade.dao.TeacherGradeView;
 import com.example.server.management.grade.dto.GradeRequest;
 import com.example.server.management.lecture.Lecture;
 import com.example.server.management.lecture.LectureRepository;
+import com.example.server.management.lecture.dao.GradeLectureView;
 import com.example.server.management.subject.Subject;
+import com.example.server.management.subject.SubjectRepository;
 import com.example.server.util.email.Email;
 import com.example.server.util.email.EmailService;
 import com.example.server.user.student.Student;
@@ -31,54 +33,12 @@ public class GradeService {
     private final StudentRepository studentRepository;
     private final LectureRepository lectureRepository;
     private final TeacherRepository teacherRepository;
+    private final SubjectRepository subjectRepository;
     private final EmailService emailService;
     private Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
     public Grade readGrade(Long id) {
         return repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Grade not found."));
-    }
-
-    public Grade createGrade(GradeRequest request) {
-        Lecture lecture = lectureRepository.findById(request.getLectureID()).orElseThrow(() -> new UsernameNotFoundException("Lecture not found."));
-        Subject subject = lecture.getSubject();
-        List<Student> students = lecture.getDept().getStudents();
-        Student s = null;
-        Teacher t = null;
-        Subject sub = null;
-
-        for (Student student : students) {
-            if (student.getId().equals(request.getStudentID())) {
-                s = student;
-            }
-        }
-
-        for (Teacher teacher : lecture.getDept().getTeachers()) {
-            if (teacher.getId().equals(request.getTeacherID())) {
-                t = teacher;
-            }
-        }
-
-        var grade = Grade
-                .builder()
-                .value(request.getValue())
-                .type(request.getType())
-                .subject(subject)
-                .createdBy(t)
-                .student(s)
-                .lecture(lecture)
-                .createdAt(new Date(System.currentTimeMillis()))
-                .build();
-        repository.save(grade);
-
-        s.getGrades().add(grade);
-        studentRepository.save(s);
-
-        t.getGrades().add(grade);
-        teacherRepository.save(t);
-
-        logger.info(String.format("Teacher %s %s gave a grade %d to student %s %s in %s."), t.getName(), t.getSurname(), grade.getValue(), s.getName(), s.getSurname(), subject.getName());
-
-        return grade;
     }
 
     public List<Grade> index() {
@@ -87,291 +47,261 @@ public class GradeService {
 
     public String deleteGrade(Long id) throws Exception {
         Grade grade = repository.findById(id).orElseThrow(() -> new Exception("Grade not found."));
+
+        Email email = Email
+                .builder()
+                .to(grade.getStudent().getParent().getEmail())
+                .subject(String.format("%s %s - Grade Deletion", grade.getStudent().getName(), grade.getStudent().getSurname()))
+                .text(String.format("%s %s deleted %s %s's grade %d in %s.", grade.getCreatedBy().getName(), grade.getCreatedBy().getSurname(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue(), grade.getSubject().getName()))
+                .build();
+        emailService.sendEmail(email);
+
+        logger.warn(String.format("%s %s deleted %s %s's grade %d in %s.", grade.getCreatedBy().getName(), grade.getCreatedBy().getSurname(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue(), grade.getSubject().getName()));
+
+        String.format("%s %s deleted %s %s's grade %d in %s.", grade.getCreatedBy().getName(), grade.getCreatedBy().getSurname(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue(), grade.getSubject().getName());
+
         repository.delete(grade);
 
-        logger.warn(String.format("Grade %d successfully deleted.", id));
-
-        return String.format("Grade %d successfully deleted.", id);
+        return String.format("Grade with ID: %d successfully deleted.", id);
     }
 
     public List<GradeView> readLectureStudentGrades(Long teacherID, Long deptID, Long subjectID, Long lectureID, Long studentID) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
-        Department dept = null;
-        Lecture l = null;
-        Student s = null;
         List<GradeView> grades = new ArrayList<>();
 
-        for (Department department : teacher.getDepartments()) {
-            if (department.getId().equals(deptID)) {
-                dept = department;
+        for (Department d : teacher.getDepartments()) {
+            if (d.getId().equals(deptID)) {
+                for (Subject s : d.getSubjects()) {
+                    if (s.getId().equals(subjectID)) {
+                        for (Lecture l : s.getLectures()) {
+                            if (l.getId().equals(lectureID)) {
+                                for (Student st : l.getDept().getStudents()) {
+                                    for (Grade gr : st.getGrades()) {
+                                        if (gr.getSubject().getId().equals(subjectID)) {
+                                            GradeTeacherView teacherView = GradeTeacherView
+                                                    .builder()
+                                                    .teacherID(gr.getCreatedBy().getId())
+                                                    .name(gr.getCreatedBy().getName())
+                                                    .surname(gr.getCreatedBy().getSurname())
+                                                    .build();
+
+                                            GradeView grade = GradeView
+                                                    .builder()
+                                                    .gradeID(gr.getId())
+                                                    .value(gr.getValue())
+                                                    .subject(gr.getSubject().getName())
+                                                    .type(gr.getType())
+                                                    .semester(gr.getSubject().getSemester())
+                                                    .createdBy(teacherView)
+                                                    .build();
+
+                                            grades.add(grade);
+                                        }
+                                    }
+                                    return grades;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        for (Lecture lecture : dept.getLectures()) {
-            if (lecture.getId().equals(lectureID)) {
-                l = lecture;
-            }
-        }
-
-        for (Student student : l.getDept().getStudents()) {
-            if (student.getId().equals(studentID)) {
-                s = student;
-            }
-        }
-
-        for (Grade grade : s.getGrades()) {
-            if (grade.getSubject().getId().equals(subjectID)) {
-                GradeTeacherView teacherView = GradeTeacherView
-                        .builder()
-                        .teacherID(grade.getCreatedBy().getId())
-                        .name(grade.getCreatedBy().getName())
-                        .surname(grade.getCreatedBy().getSurname())
-                        .build();
-
-                GradeView view = GradeView
-                        .builder()
-                        .gradeID(grade.getId())
-                        .value(grade.getValue())
-                        .subject(grade.getSubject().getName())
-                        .type(grade.getType())
-                        .semester(grade.getSubject().getSemester())
-                        .createdBy(teacherView)
-                        .build();
-
-                grades.add(view);
-            }
-        }
-
-        return grades;
+        throw new UsernameNotFoundException("Student not found.");
     }
 
     public GradeView readLectureStudentGrade(Long teacherID, Long deptID, Long subjectID, Long lectureID, Long studentID, Long gradeID) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
-        Department department = null;
-        Subject subject = null;
-        Lecture lecture = null;
-        Student student = null;
-        GradeView grade = null;
 
-        for (Department dept : teacher.getDepartments()) {
-            if (dept.getId().equals(deptID)) {
-                department = dept;
+        for (Department d : teacher.getDepartments()) {
+            if (d.getId().equals(deptID)) {
+                for (Subject s : d.getSubjects()) {
+                    if (s.getId().equals(subjectID)) {
+                        for (Lecture l : s.getLectures()) {
+                            if (l.getId().equals(lectureID)) {
+                                for (Student st : d.getStudents()) {
+                                    if (st.getId().equals(studentID)) {
+                                        for (Grade g : st.getGrades()) {
+                                            if (g.getSubject().getId().equals(subjectID)) {
+                                                GradeTeacherView teacherView = GradeTeacherView
+                                                        .builder()
+                                                        .teacherID(g.getCreatedBy().getId())
+                                                        .name(g.getCreatedBy().getName())
+                                                        .surname(g.getCreatedBy().getSurname())
+                                                        .build();
+
+                                                GradeLectureView lecture = GradeLectureView
+                                                        .builder()
+                                                        .id(g.getLecture().getId())
+                                                        .date(g.getLecture().getCreatedAt())
+                                                        .build();
+
+                                                GradeView grade = GradeView
+                                                        .builder()
+                                                        .gradeID(gradeID)
+                                                        .value(g.getValue())
+                                                        .subject(g.getSubject().getName())
+                                                        .type(g.getType())
+                                                        .semester(g.getSubject().getSemester())
+                                                        .createdBy(teacherView)
+                                                        .lecture(lecture)
+                                                        .createdAt(g.getCreatedAt())
+                                                        .build();
+
+                                                return grade;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        for (Subject s : department.getSubjects()) {
-            if (s.getId().equals(subjectID)) {
-                subject = s;
-            }
-        }
-
-        for (Lecture l : subject.getLectures()) {
-            if (l.getId().equals(lectureID)) {
-                lecture = l;
-            }
-        }
-
-        for (Student s : lecture.getDept().getStudents()) {
-            if (s.getId().equals(studentID)) {
-                student = s;
-            }
-        }
-
-        for (Grade g : student.getGrades()) {
-            if (g.getSubject().getId().equals(subjectID)) {
-                GradeTeacherView teacherView = GradeTeacherView
-                        .builder()
-                        .teacherID(g.getCreatedBy().getId())
-                        .name(g.getCreatedBy().getName())
-                        .surname(g.getCreatedBy().getSurname())
-                        .build();
-
-                GradeView view = GradeView
-                        .builder()
-                        .gradeID(gradeID)
-                        .value(g.getValue())
-                        .subject(g.getSubject().getName())
-                        .type(g.getType())
-                        .semester(g.getSubject().getSemester())
-                        .createdBy(teacherView)
-                        .createdAt(g.getCreatedAt())
-                        .build();
-                grade = view;
-            }
-
-        }
-
-        return grade;
+        throw new UsernameNotFoundException("Grade not found.");
     }
 
     public String postLectureStudentGrade(Long teacherID, Long deptID, Long subjectID, Long lectureID, Long studentID, int value, Type type) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
-        Subject subject = null;
-        Department d = null;
-        Lecture l = null;
-        Student s = null;
 
-        for (Department dept : teacher.getDepartments()) {
-            if (dept.getId().equals(deptID)) {
-                d = dept;
+        for (Department d : teacher.getDepartments()) {
+            if (d.getId().equals(deptID)) {
+                for (Subject s : d.getSubjects()) {
+                    if (s.getId().equals(subjectID)) {
+                        for (Lecture l : s.getLectures()) {
+                            if (l.getId().equals(lectureID)) {
+                                for (Student student : d.getStudents()) {
+                                    if (student.getId().equals(studentID)) {
+                                        Grade grade = Grade
+                                                .builder()
+                                                .value(value)
+                                                .type(type)
+                                                .student(student)
+                                                .createdBy(teacher)
+                                                .createdAt(new Date(System.currentTimeMillis()))
+                                                .lecture(l)
+                                                .subject(s)
+                                                .build();
+
+                                        if (value < 1 || value > 5) {
+                                            return "Grade value must be between 1 and 5.";
+                                        }
+
+                                        repository.save(grade);
+                                        student.getGrades().add(grade);
+                                        studentRepository.save(student);
+                                        l.getGrades().add(grade);
+                                        lectureRepository.save(l);
+                                        s.getGrades().add(grade);
+                                        subjectRepository.save(s);
+
+                                        logger.info(String.format("%s %s gave %s %s a grade %d in %s.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), grade.getValue(), s.getName()));
+
+                                        Email email = Email
+                                                .builder()
+                                                .to(student.getParent().getEmail())
+                                                .subject(String.format("%s %s - New Grade", student.getName(), student.getSurname()))
+                                                .text(String.format("Subject: %s\nGrade: %d\nType: %s\nGiven by: %s %s\nDate: %s", grade.getSubject().getName(), grade.getValue(), grade.getType().name(), grade.getCreatedBy().getName(), grade.getCreatedBy().getSurname(), grade.getCreatedAt().toString()))
+                                                .build();
+
+                                        emailService.sendEmail(email);
+
+                                        return String.format("%s %s gave %s %s a grade %d in %s.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), grade.getValue(), s.getName());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        for (Subject subj : d.getSubjects()) {
-            if (subj.getId().equals(subjectID)) {
-                subject = subj;
-            }
-        }
-
-        for (Lecture lecture : d.getLectures()) {
-            if (lecture.getId().equals(lectureID)) {
-                l = lecture;
-            }
-        }
-
-        for (Student student : l.getDept().getStudents()) {
-            if (student.getId().equals(studentID)) {
-                s = student;
-            }
-        }
-
-        Grade grade = Grade
-                .builder()
-                .value(value)
-                .type(type)
-                .subject(subject)
-                .lecture(l)
-                .student(s)
-                .createdAt(new Date(System.currentTimeMillis()))
-                .createdBy(teacher)
-                .build();
-
-        repository.save(grade);
-        teacher.getGrades().add(grade);
-        teacherRepository.save(teacher);
-        s.getGrades().add(grade);
-        studentRepository.save(s);
-
-        Email email = Email
-                .builder()
-                .to(s.getParent().getEmail())
-                .subject(String.format("%s %s - New Grade", s.getName(), s.getSurname()))
-                .text(String.format("Subject: %s\nGrade: %d\nType: %s\nGiven by: %s %s\nDate: %s", grade.getSubject().getName(), grade.getValue(), grade.getType().name(), grade.getCreatedBy().getName(), grade.getCreatedBy().getSurname(), grade.getCreatedAt().toString()))
-                .build();
-
-        emailService.sendEmail(email);
-        logger.info(String.format("%s %s added a grade %d to student %s %s of type %s in %s", teacher.getName(), teacher.getSurname(), grade.getValue(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getType().name(), l.getSubject().getName()));
-
-        return String.format("Student %s %s received a grade %d.", s.getName(), s.getSurname(), grade.getValue());
+        throw new UsernameNotFoundException("Student not found.");
     }
 
     public String updateLectureStudentGrade(Long teacherID, Long deptID, Long subjectID, Long lectureID, Long studentID, Long gradeID, int value) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
-        Department department = null;
-        Subject subject = null;
-        Lecture lecture = null;
-        Student student = null;
-        Grade grade = null;
 
         for (Department d : teacher.getDepartments()) {
             if (d.getId().equals(deptID)) {
-                department = d;
+                for (Subject s : d.getSubjects()) {
+                    if (s.getId().equals(subjectID)) {
+                        for (Lecture l : s.getLectures()) {
+                            if (l.getId().equals(lectureID)) {
+                                for (Student st : d.getStudents()) {
+                                    if (st.getId().equals(studentID)) {
+                                        for (Grade g : st.getGrades()) {
+                                            if (g.getId().equals(gradeID)) {
+                                                g.setValue(value);
+                                                g.setUpdatedAt(new Date(System.currentTimeMillis()));
+                                                g.setUpdatedBy(teacher.getUser());
+                                                repository.save(g);
+
+                                                Email email = Email
+                                                        .builder()
+                                                        .to(g.getStudent().getParent().getEmail())
+                                                        .subject(String.format("%s %s - Grade Update", g.getStudent().getName(), g.getStudent().getSurname()))
+                                                        .text(String.format("%s %s's grade was updated to %d by %s.", g.getStudent().getName(), g.getStudent().getSurname(), g.getValue(), g.getUpdatedBy().getUsername()))
+                                                        .build();
+                                                emailService.sendEmail(email);
+
+                                                logger.info(String.format("%s updated %s %s's grade to %d.", g.getUpdatedBy().getUsername(), g.getStudent().getName(), g.getStudent().getSurname(), g.getValue()));
+
+                                                return String.format("%s updated %s %s's grade to %d.", g.getUpdatedBy().getUsername(), g.getStudent().getName(), g.getStudent().getSurname(), g.getValue());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        for (Subject s : department.getSubjects()) {
-            if (s.getId().equals(subjectID)) {
-                subject = s;
-            }
-        }
-
-        for (Lecture l : subject.getLectures()) {
-            if (l.getId().equals(lectureID)) {
-                lecture = l;
-            }
-        }
-
-        for (Student s : lecture.getDept().getStudents()) {
-            if (s.getId().equals(studentID)) {
-                student = s;
-            }
-        }
-
-        for (Grade g : student.getGrades()) {
-            if (g.getId().equals(gradeID)) {
-                grade = g;
-            }
-        }
-
-        grade.setValue(value);
-        grade.setUpdatedAt(new Date(System.currentTimeMillis()));
-        grade.setUpdatedBy(teacher.getUser());
-        repository.save(grade);
-
-        Email email = Email
-                .builder()
-                .to(grade.getStudent().getParent().getEmail())
-                .subject(String.format("%s %s - Grade Update", grade.getStudent().getName(), grade.getStudent().getSurname()))
-                .text(String.format("%s %s's grade was updated to %d by %s.", grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue(), grade.getUpdatedBy().getUsername()))
-                .build();
-        emailService.sendEmail(email);
-
-        logger.info(String.format("%s updated %s %s's grade to %d.", grade.getUpdatedBy().getUsername(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue()));
-
-        return String.format("%s updated %s %s's grade to %d.", grade.getUpdatedBy().getUsername(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue());
+        throw new UsernameNotFoundException("Grade not found.");
     }
 
     public String deleteLectureStudentGrade(Long teacherID, Long deptID, Long subjectID, Long lectureID, Long studentID, Long gradeID) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
-        Department department = null;
-        Subject subject = null;
-        Lecture lecture = null;
-        Student student = null;
-        Grade grade = null;
 
         for (Department d : teacher.getDepartments()) {
             if (d.getId().equals(deptID)) {
-                department = d;
+                for (Subject s : d.getSubjects()) {
+                    if (s.getId().equals(subjectID)) {
+                        for (Lecture l : s.getLectures()) {
+                            if (l.getId().equals(lectureID)) {
+                                for (Student st : d.getStudents()) {
+                                    if (st.getId().equals(studentID)) {
+                                        for (Grade g : l.getGrades()) {
+                                            if (g.getId().equals(gradeID)) {
+                                                Email email = Email
+                                                        .builder()
+                                                        .to(g.getStudent().getParent().getEmail())
+                                                        .subject(String.format("%s %s - Grade Deletion", g.getStudent().getName(), g.getStudent().getSurname()))
+                                                        .text(String.format("%s %s removed %s %s's grade %d from %s.\nDate: %s", teacher.getName(), teacher.getSurname(), g.getStudent().getName(), g.getStudent().getSurname(), g.getValue(), g.getSubject().getName(), new Date(System.currentTimeMillis()).toString()))
+                                                        .build();
+                                                emailService.sendEmail(email);
+
+                                                logger.warn(String.format("%s %s removed %s %s's grade %d from %s.", teacher.getName(), teacher.getSurname(), st.getName(), st.getSurname(), g.getValue(), g.getSubject().getName()));
+
+                                                repository.delete(g);
+
+                                                return String.format("%s %s removed %s %s's grade %d from %s.", teacher.getName(), teacher.getSurname(), st.getName(), st.getSurname(), g.getValue(), g.getSubject().getName());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        for (Subject s : department.getSubjects()) {
-            if (s.getId().equals(subjectID)) {
-                subject = s;
-            }
-        }
-
-        for (Lecture l : subject.getLectures()) {
-            if (l.getId().equals(lectureID)) {
-                lecture = l;
-            }
-        }
-
-        for (Student s : lecture.getDept().getStudents()) {
-            if (s.getId().equals(studentID)) {
-                student = s;
-            }
-        }
-
-        for (Grade g : student.getGrades()) {
-            if (g.getId().equals(gradeID)) {
-                grade = g;
-            }
-        }
-
-        Email email = Email
-                .builder()
-                .to(grade.getStudent().getParent().getEmail())
-                .subject(String.format("%s %s - Grade Removal", grade.getStudent().getName(), grade.getStudent().getSurname()))
-                .text(String.format("%s %s removed %s %s's grade %d from %s.\nDate: %s", teacher.getName(), teacher.getSurname(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue(), grade.getSubject().getName(), new Date(System.currentTimeMillis()).toString()))
-                .build();
-        emailService.sendEmail(email);
-
-        logger.info(String.format("%s %s removed %s %s's grade %d from %s.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), grade.getValue(), grade.getSubject().getName()));
-
-        repository.delete(grade);
-
-        return String.format("%s %s removed %s %s's grade %d from %s.", teacher.getName(), teacher.getSurname(), student.getName(), student.getSurname(), grade.getValue(), grade.getSubject().getName());
+        throw new UsernameNotFoundException("Grade not found.");
     }
 
     public List<GradeView> readTeacherGrades(Long id) {

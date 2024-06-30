@@ -1,5 +1,6 @@
 package com.example.server.management.feedback;
 
+import com.example.server.management.lecture.Lecture;
 import com.example.server.user.student.Student;
 import com.example.server.user.teacher.Teacher;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -18,6 +19,7 @@ public class Feedback {
     private @Column(nullable = false) FeedbackType type;
     private @Column(nullable = false) String text;
     private @JsonBackReference @ManyToOne @JoinColumn(name = "student") Student student;
+    private @JsonBackReference @ManyToOne @JoinColumn(name = "lecture") Lecture lecture;
     private @JsonBackReference @ManyToOne @JoinColumn(name = "createdBy") Teacher createdBy;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm")
     private @Column(nullable = false, updatable = false) Date createdAt;

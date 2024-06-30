@@ -19,12 +19,12 @@ public class TeacherGradeView {
     private @JsonView(Views.Public.class) Long id;
     private @JsonView(Views.Public.class) int value;
     private @JsonView(Views.Public.class) String subject;
-    private @JsonView(Views.Public.class) Type type;
-    private @JsonView(Views.Public.class) Semester semester;
-    private @JsonView(Views.Public.class) GradeStudentView student;
-    private @JsonView(Views.Public.class) Lecture lecture;
+    private @JsonView(Views.General.class) Type type;
+    private @JsonView(Views.General.class) Semester semester;
+    private @JsonView(Views.General.class) GradeStudentView student;
+    private @JsonView(Views.Private.class) Lecture lecture;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private @JsonView(Views.Public.class) Date createdAt;
+    private @JsonView(Views.Private.class) Date createdAt;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private @JsonView(Views.Public.class) Date updatedAt;
+    private @JsonView(Views.Private.class) Date updatedAt;
 }

@@ -70,4 +70,15 @@ public class AdminStudentController {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @PatchMapping("/{id}/dept") @PreAuthorize("hasAuthority('admin:update')")
+    ResponseEntity<String> addDeptToStudent(@PathVariable Long id, @RequestParam Long deptID) {
+        try {
+            Student student = service.readStudent(id);
+
+            return new ResponseEntity<String>(service.updateStudentDept(id, deptID), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

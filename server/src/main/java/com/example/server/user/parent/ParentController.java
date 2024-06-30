@@ -2,30 +2,20 @@ package com.example.server.user.parent;
 
 import com.example.server.config.JwtService;
 import com.example.server.management.feedback.dao.FeedbackView;
-import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.dao.GradeView;
 import com.example.server.security.Views;
 import com.example.server.user.User;
-import com.example.server.user.UserRepository;
 import com.example.server.user.UserService;
 import com.example.server.user.parent.dao.PrivateParentView;
 import com.example.server.user.student.dao.ParentStudentView;
-import com.example.server.user.student.dao.PrivateStudentView;
 import com.fasterxml.jackson.annotation.JsonView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.GregorianCalendar;
 import java.util.List;
-
-/*
- *          TODO: Grades Search
- */
-
 
 @RestController @RequiredArgsConstructor
 @RequestMapping("/api/v1/parents") @PreAuthorize("hasRole('PARENT')")

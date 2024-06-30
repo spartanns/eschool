@@ -4,6 +4,7 @@ import com.example.server.management.feedback.Feedback;
 import com.example.server.management.feedback.dao.FeedbackView;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.dao.GradeView;
+import com.example.server.management.lecture.dao.GradeLectureView;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
 import com.example.server.user.parent.dao.PrivateParentView;
@@ -13,6 +14,8 @@ import com.example.server.user.student.StudentRepository;
 import com.example.server.user.student.dao.ParentStudentView;
 import com.example.server.user.teacher.dao.GradeTeacherView;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,9 +29,10 @@ public class ParentService {
     private final UserRepository userRepository;
     private final StudentRepository studentRepository;
     private final PasswordEncoder encoder;
+    private Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
     public Parent createParent(ParentRequest request) {
-        var user = User
+        User user = User
                 .builder()
                 .username(request.getUsername())
                 .password(encoder.encode(request.getPassword()))
@@ -36,7 +40,7 @@ public class ParentService {
                 .build();
         userRepository.save(user);
 
-        var parent = Parent
+        Parent parent = Parent
                 .builder()
                 .name(request.getName())
                 .surname(request.getSurname())
@@ -44,7 +48,11 @@ public class ParentService {
                 .user(user)
                 .build();
 
-        return repository.save(parent);
+        repository.save(parent);
+
+        logger.info("Parent %s %s with ID: %d created.", parent.getName(), parent.getSurname(), parent.getId());
+
+        return parent;
     }
 
     public List<Parent> index() {
@@ -70,6 +78,12 @@ public class ParentService {
                         .surname(g.getCreatedBy().getSurname())
                         .build();
 
+                GradeLectureView lecture = GradeLectureView
+                        .builder()
+                        .id(g.getLecture().getId())
+                        .date(g.getLecture().getCreatedAt())
+                        .build();
+
                 GradeView grade = GradeView
                         .builder()
                         .gradeID(g.getId())
@@ -79,6 +93,7 @@ public class ParentService {
                         .createdAt(g.getCreatedAt())
                         .subject(g.getSubject().getName())
                         .semester(g.getSubject().getSemester())
+                        .lecture(lecture)
                         .build();
                 grades.add(grade);
 
@@ -157,12 +172,16 @@ public class ParentService {
 
         repository.save(parent);
 
+        logger.info(String.format("Student %s %s added to parent %s %s.", student.getName(), student.getSurname(), parent.getName(), parent.getSurname()));
+
         return String.format("Student %s %s added to parent %s %s.", student.getName(), student.getSurname(), parent.getName(), parent.getSurname());
     }
 
     public String deleteParent(Long id) {
         Parent parent = repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Parent not found."));
         repository.delete(parent);
+
+        logger.warn(String.format("Parent %s %s deleted from database.", parent.getName(), parent.getSurname()));
 
         return String.format("Parent %s %s successfully deleted.", parent.getName(), parent.getSurname());
     }
@@ -279,6 +298,12 @@ public class ParentService {
                            .surname(g.getCreatedBy().getSurname())
                            .build();
 
+                   GradeLectureView lecture = GradeLectureView
+                           .builder()
+                           .id(g.getLecture().getId())
+                           .date(g.getLecture().getCreatedAt())
+                           .build();
+
                    GradeView grade = GradeView
                            .builder()
                            .gradeID(g.getId())
@@ -288,6 +313,7 @@ public class ParentService {
                            .type(g.getType())
                            .createdAt(g.getCreatedAt())
                            .createdBy(teacher)
+                           .lecture(lecture)
                            .build();
                    grades.add(grade);
                }
@@ -342,6 +368,11 @@ public class ParentService {
                                 .surname(g.getCreatedBy().getSurname())
                                 .build();
 
+                        GradeLectureView lecture = GradeLectureView
+                                .builder()
+                                .id(g.getLecture().getId())
+                                .date(g.getLecture().getCreatedAt())
+                                .build();
 
                         GradeView grade = GradeView
                                 .builder()
@@ -352,6 +383,7 @@ public class ParentService {
                                 .type(g.getType())
                                 .createdAt(g.getCreatedAt())
                                 .createdBy(teacher)
+                                .lecture(lecture)
                                 .build();
 
                         return grade;

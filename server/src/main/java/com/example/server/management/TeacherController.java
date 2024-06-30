@@ -3,9 +3,8 @@ package com.example.server.management;
 import com.example.server.admin.department.DepartmentService;
 import com.example.server.admin.department.dao.SingleDeptView;
 import com.example.server.config.JwtService;
-import com.example.server.admin.department.Department;
-import com.example.server.management.feedback.Feedback;
 import com.example.server.management.feedback.FeedbackService;
+import com.example.server.management.feedback.dao.TeacherFeedbackView;
 import com.example.server.management.feedback.dto.FeedbackRequest;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.GradeService;
@@ -15,18 +14,20 @@ import com.example.server.management.grade.dao.TeacherGradeView;
 import com.example.server.management.lecture.Lecture;
 import com.example.server.management.lecture.LectureService;
 import com.example.server.management.lecture.dao.LectureView;
+import com.example.server.management.lecture.dao.TeacherLectureView;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.SubjectService;
 import com.example.server.management.subject.dao.SingleSubjectView;
 import com.example.server.security.Views;
 import com.example.server.user.User;
 import com.example.server.user.UserService;
-import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentService;
 import com.example.server.user.student.dao.TeacherStudentView;
 import com.example.server.user.teacher.Teacher;
 import com.example.server.user.teacher.TeacherService;
+import com.example.server.user.teacher.dao.TeacherView;
 import com.fasterxml.jackson.annotation.JsonView;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,7 +56,7 @@ public class TeacherController {
 
             if (user.getUsername().equals(service.readTeacher(id).getUser().getUsername())) {
 
-                return new ResponseEntity<Teacher>(service.readTeacher(id), HttpStatus.OK);
+                return new ResponseEntity<TeacherView>(service.readTeacherView(id), HttpStatus.OK);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
@@ -85,23 +86,9 @@ public class TeacherController {
     ResponseEntity<?> viewDepartment(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID) {
         try {
             User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
-            Department dept = deptService.readDept(deptID);
-            Teacher t = null;
-            Department d = null;
+            Teacher teacher = service.readTeacher(teacherID);
 
-            for (Teacher teacher : dept.getTeachers()) {
-                if (teacher.getId().equals(teacherID)) {
-                    t = teacher;
-                }
-            }
-
-            for (Department deptm : t.getDepartments()) {
-                if (deptm.getId().equals(deptID)) {
-                    d = deptm;
-                }
-            }
-
-            if (user.getUsername().equals(service.readTeacher(teacherID).getUser().getUsername()) && d.getId().equals(deptID)) {
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
 
                 return new ResponseEntity<SingleDeptView>(deptService.readTeacherDepartment(teacherID, deptID), HttpStatus.OK);
             }
@@ -136,7 +123,7 @@ public class TeacherController {
 
             if (user.getUsername().equals(teacher.getUser().getUsername())) {
 
-                return new ResponseEntity<Subject>(subjectService.readTeacherDeptSubject(teacherID, deptID, subjectID), HttpStatus.OK);
+                return new ResponseEntity<SingleSubjectView>(subjectService.readTeacherDeptSubject(teacherID, deptID, subjectID), HttpStatus.OK);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
@@ -152,7 +139,7 @@ public class TeacherController {
             Teacher teacher = service.readTeacher(teacherID);
 
             if (user.getUsername().equals(teacher.getUser().getUsername())) {
-                return new ResponseEntity<List<LectureView>>(lectureService.readSubjectLectures(teacherID, deptID, subjectID), HttpStatus.OK);
+                return new ResponseEntity<List<TeacherLectureView>>(lectureService.readSubjectLectures(teacherID, deptID, subjectID), HttpStatus.OK);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
@@ -168,7 +155,7 @@ public class TeacherController {
             Teacher teacher = service.readTeacher(teacherID);
 
             if (user.getUsername().equals(teacher.getUser().getUsername())) {
-                return new ResponseEntity<LectureView>(lectureService.readLectureView(lectureID), HttpStatus.OK);
+                return new ResponseEntity<LectureView>(lectureService.readLectureView(teacherID, deptID, subjectID, lectureID), HttpStatus.OK);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
@@ -184,7 +171,7 @@ public class TeacherController {
             Teacher teacher = service.readTeacher(teacherID);
 
             if (user.getUsername().equals(teacher.getUser().getUsername())) {
-                return new ResponseEntity<List<Student>>(studentService.readLectureStudents(teacherID, deptID, subjectID, lectureID), HttpStatus.OK);
+                return new ResponseEntity<List<TeacherStudentView>>(studentService.readLectureStudents(teacherID, deptID, subjectID, lectureID), HttpStatus.OK);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
@@ -193,7 +180,7 @@ public class TeacherController {
         }
     }
 
-    @GetMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures/{lectureID}/students/{studentID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Public.class)
+    @GetMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures/{lectureID}/students/{studentID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.General.class)
     ResponseEntity<?> getSingleLectureStudent(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID, @PathVariable Long lectureID, @PathVariable Long studentID) {
        try {
            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
@@ -216,7 +203,7 @@ public class TeacherController {
             Teacher teacher = service.readTeacher(teacherID);
 
             if (user.getUsername().equals(teacher.getUser().getUsername())) {
-                return new ResponseEntity<String>(studentService.markStudentPresent(studentID), HttpStatus.CREATED);
+                return new ResponseEntity<String>(studentService.markStudentPresent(teacherID, deptID, subjectID, lectureID, studentID), HttpStatus.CREATED);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
@@ -336,13 +323,13 @@ public class TeacherController {
     }
 
     @PostMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}/lectures/{lectureID}/students/{studentID}/feedbacks/new") @PreAuthorize("hasAuthority('manager:create')")
-    ResponseEntity<?> addStudentFeedback(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID, @PathVariable Long lectureID, @PathVariable Long studentID, @RequestBody FeedbackRequest request) {
+    ResponseEntity<?> addStudentFeedback(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID, @PathVariable Long lectureID, @PathVariable Long studentID, @Valid @RequestBody FeedbackRequest request) {
         try {
             User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
             Teacher teacher = service.readTeacher(teacherID);
 
             if (user.getUsername().equals(teacher.getUser().getUsername())) {
-                return new ResponseEntity<String>(feedbackService.createFeedback(teacherID, studentID, request), HttpStatus.CREATED);
+                return new ResponseEntity<String>(feedbackService.createFeedback(teacherID, deptID, subjectID, lectureID, studentID, request), HttpStatus.CREATED);
             }
 
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
@@ -428,6 +415,118 @@ public class TeacherController {
             return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{id}/feedbacks") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.General.class)
+    ResponseEntity<?> viewTeacherFeedbacks(@RequestHeader("Authorization") String token, @PathVariable Long id) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Teacher teacher = service.readTeacher(id);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+                return new ResponseEntity<List<TeacherFeedbackView>>(service.readTeacherFeedbacks(id), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{teacherID}/feedbacks/{feedbackID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Private.class)
+    ResponseEntity<?> viewTeacherFeedback(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long feedbackID) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Teacher teacher = service.readTeacher(teacherID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+                return new ResponseEntity<TeacherFeedbackView>(service.readTeacherFeedback(teacherID, feedbackID), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PatchMapping("/{teacherID}/feedbacks/{feedbackID}/update") @PreAuthorize("hasAuthority('manager:update')")
+    ResponseEntity<String> editFeedback(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long feedbackID, @Valid @RequestBody FeedbackRequest request) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Teacher teacher = service.readTeacher(teacherID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+                return new ResponseEntity<String>(service.updateTeacherFeedback(teacherID, feedbackID, request), HttpStatus.CREATED);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @DeleteMapping("/{teacherID}/feedbacks/{feedbackID}/delete") @PreAuthorize("hasAuthority('manager:delete')")
+    ResponseEntity<String> removeFeedback(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long feedbackID) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Teacher teacher = service.readTeacher(teacherID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+                return new ResponseEntity<String>(service.deleteFeedback(teacherID, feedbackID), HttpStatus.NO_CONTENT);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @GetMapping("/{id}/lectures") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Public.class)
+    ResponseEntity<?> viewTeacherLectures(@RequestHeader("Authorization") String token, @PathVariable Long id) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Teacher teacher = service.readTeacher(id);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+                return new ResponseEntity<List<TeacherLectureView>>(service.readTeacherLectures(id), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/{teacherID}/lectures/{lectureID}/delete") @PreAuthorize("hasAuthority('manager:delete')")
+    ResponseEntity<String> deleteTeacherLecture(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long lectureID) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Teacher teacher = service.readTeacher(teacherID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+                return new ResponseEntity<String>(lectureService.deleteTeacherLecture(teacherID, lectureID), HttpStatus.NO_CONTENT);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @GetMapping("/{teacherID}/lectures/{lectureID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.General.class)
+    ResponseEntity<?> viewTeacherLecture(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long lectureID) {
+        try {
+            User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));
+            Teacher teacher = service.readTeacher(teacherID);
+
+            if (user.getUsername().equals(teacher.getUser().getUsername())) {
+                return new ResponseEntity<TeacherLectureView>(lectureService.readTeacherLecture(teacherID, lectureID), HttpStatus.OK);
+            }
+
+            return new ResponseEntity<String>("[UNAUTHORIZED]", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
 }

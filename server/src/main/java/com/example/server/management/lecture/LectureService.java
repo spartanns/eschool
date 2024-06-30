@@ -1,13 +1,17 @@
 package com.example.server.management.lecture;
 
 import com.example.server.admin.department.Department;
-import com.example.server.admin.department.DepartmentRepository;
+import com.example.server.management.feedback.Feedback;
+import com.example.server.management.feedback.dao.TeacherFeedbackView;
+import com.example.server.management.grade.Grade;
+import com.example.server.management.grade.dao.TeacherGradeView;
 import com.example.server.management.lecture.dao.LectureView;
-import com.example.server.management.lecture.dto.LectureRequest;
+import com.example.server.management.lecture.dao.TeacherLectureView;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.SubjectRepository;
 import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentRepository;
+import com.example.server.user.student.dao.GradeStudentView;
 import com.example.server.user.teacher.Teacher;
 import com.example.server.user.teacher.TeacherRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,71 +28,106 @@ import java.util.List;
 public class LectureService {
     private final LectureRepository repository;
     private final SubjectRepository subjectRepository;
-    private final DepartmentRepository departmentRepository;
     private final TeacherRepository teacherRepository;
     private final StudentRepository studentRepository;
     private Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
     public Lecture createLecture(Long teacherID, Long deptID, Long subjectID) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
-        List<Department> departments = teacher.getDepartments();
-        Department dept = null;
-        Subject s = null;
 
-        for (Department department : departments) {
-            if (department.getId().equals(deptID)) {
-                dept = department;
+        for (Department d : teacher.getDepartments()) {
+            if (d.getId().equals(deptID)) {
+                for (Subject s : d.getSubjects()) {
+                    if (s.getId().equals(subjectID)) {
+                        Lecture lecture = Lecture
+                                .builder()
+                                .subject(s)
+                                .createdAt(new Date(System.currentTimeMillis()))
+                                .teacher(teacher)
+                                .dept(d)
+                                .build();
+                        s.setHours(s.getHours() + 1);
+                        subjectRepository.save(s);
+                        repository.save(lecture);
 
-                break;
+                        logger.info(String.format("Lecture with ID: %d created by %s %s.", lecture.getId(), lecture.getTeacher().getName(), lecture.getTeacher().getSurname()));
+
+                        return lecture;
+                    }
+                }
             }
         }
 
-        List<Subject> subjects = dept.getSubjects();
-
-        for (Subject subject : subjects) {
-            if (subject.getId().equals(subjectID)) {
-                s = subject;
-
-                break;
-            }
-        }
-
-        var lecture = Lecture
-                .builder()
-                .teacher(teacher)
-                .dept(dept)
-                .subject(s)
-                .createdAt(new Date(System.currentTimeMillis()))
-                .build();
-
-
-        s.setHours(s.getHours() + 1);
-
-        subjectRepository.save(s);
-
-        repository.save(lecture);
-
-        logger.info(String.format("Lecture with ID: %d created by %s %s.", lecture.getId(), lecture.getTeacher().getName(), lecture.getTeacher().getSurname()));
-
-        return lecture;
+       throw new UsernameNotFoundException("Subject not found.");
     }
 
     public Lecture readLecture(Long id) {
         return repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Lecture not found."));
     }
 
-    public LectureView readLectureView(Long id) {
-        Lecture lecture = repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Lecture not found."));
-        LectureView view = LectureView
-                .builder()
-                .id(lecture.getId())
-                .teacher(String.format("%s %s", lecture.getTeacher().getName(), lecture.getTeacher().getSurname()))
-                .subject(lecture.getSubject().getName())
-                .students(lecture.getDept().getStudents())
-                .date(lecture.getCreatedAt())
-                .build();
+    public LectureView readLectureView(Long teacherID, Long deptID, Long subjectID, Long lectureID) {
+        Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        List<GradeStudentView> students = new ArrayList<>();
+        List<TeacherGradeView> grades = new ArrayList<>();
+        List<TeacherFeedbackView> feedbacks = new ArrayList<>();
 
-        return view;
+        for (Department d : teacher.getDepartments()) {
+            if (d.getId().equals(deptID)) {
+                for (Subject s : d.getSubjects()) {
+                    if (s.getId().equals(subjectID)) {
+                        for (Lecture l : s.getLectures()) {
+                            if (l.getId().equals(lectureID)) {
+                                for (Student st : l.getAttendants()) {
+                                    GradeStudentView student = GradeStudentView
+                                            .builder()
+                                            .id(st.getId())
+                                            .name(st.getName())
+                                            .surname(st.getSurname())
+                                            .build();
+                                    students.add(student);
+                                }
+
+                                for (Grade g : l.getGrades()) {
+                                    GradeStudentView student = GradeStudentView
+                                            .builder()
+                                            .id(g.getStudent().getId())
+                                            .name(g.getStudent().getName())
+                                            .surname(g.getStudent().getSurname())
+                                            .build();
+
+                                    TeacherGradeView grade = TeacherGradeView
+                                            .builder()
+                                            .id(g.getCreatedBy().getId())
+                                            .value(g.getValue())
+                                            .lecture(g.getLecture())
+                                            .type(g.getType())
+                                            .subject(g.getSubject().getName())
+                                            .student(student)
+                                            .semester(g.getSubject().getSemester())
+                                            .build();
+                                    grades.add(grade);
+                                }
+
+                                LectureView lecture = LectureView
+                                        .builder()
+                                        .id(l.getId())
+                                        .teacher(String.format("%s %s", l.getTeacher().getName(), l.getTeacher().getSurname()))
+                                        .subject(l.getSubject().getName())
+                                        .attendants(students)
+                                        .date(l.getCreatedAt())
+                                        .grades(grades)
+                                        .feedbacks(feedbacks) // TODO: Build feedbacks list
+                                        .build();
+
+                                return lecture;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+      throw new UsernameNotFoundException("Lecture not found.");
     }
 
     public List<Lecture> index() {
@@ -108,37 +147,111 @@ public class LectureService {
         return String.format("Marked student with ID: %d as present.", studentID);
     }
 
-    public List<LectureView> readSubjectLectures(Long teacherID, Long deptID, Long subjectID) {
+    public List<TeacherLectureView> readSubjectLectures(Long teacherID, Long deptID, Long subjectID) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
-        Department department = null;
-        Subject subject = null;
-        Lecture lecture = null;
-        List<LectureView> lectures = new ArrayList<>();
+        List<TeacherLectureView> lectures = new ArrayList<>();
+        List<GradeStudentView> students = new ArrayList<>();
 
         for (Department d : teacher.getDepartments()) {
             if (d.getId().equals(deptID)) {
-                department = d;
+                for (Subject s : d.getSubjects()) {
+                    if (s.getId().equals(subjectID)) {
+                        for (Lecture l : s.getLectures()) {
+                            for (Student st : l.getAttendants()) {
+                                GradeStudentView student = GradeStudentView
+                                        .builder()
+                                        .id(st.getId())
+                                        .name(st.getName())
+                                        .surname(st.getSurname())
+                                        .build();
+                                students.add(student);
+                            }
+                            TeacherLectureView lecture = TeacherLectureView
+                                    .builder()
+                                    .id(l.getId())
+                                    .attendants(students)
+                                    .subject(l.getSubject().getName())
+                                    .date(l.getCreatedAt())
+                                    .build();
+                            lectures.add(lecture);
+                        }
+
+                        return lectures;
+                    }
+                }
+            }
+        }
+        throw new UsernameNotFoundException("Subject not found.");
+    }
+
+    public String deleteTeacherLecture(Long teacherID, Long lectureID) {
+        Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+
+        for (Lecture l : teacher.getLectures()) {
+            if (l.getId().equals(lectureID)) {
+                repository.delete(l);
+
+                logger.warn(String.format("%s %s deleted a lecture with ID: %d", teacher.getName(), teacher.getSurname(), lectureID));
+
+                return String.format("%s %s deleted a lecture with ID: %d", teacher.getName(), teacher.getSurname(), lectureID);
             }
         }
 
-        for (Subject s : department.getSubjects()) {
-            if (s.getId().equals(subjectID)) {
-                subject = s;
+        throw new UsernameNotFoundException("Lecture not found.");
+    }
+
+    public TeacherLectureView readTeacherLecture(Long teacherID, Long lectureID) {
+        Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        List<GradeStudentView> students = new ArrayList<>();
+        List<TeacherFeedbackView> feedbacks = new ArrayList<>();
+        List<TeacherGradeView> grades = new ArrayList<>();
+
+        for (Lecture l : teacher.getLectures()) {
+            if (l.getId().equals(lectureID)) {
+                for (Student s : l.getAttendants()) {
+                    GradeStudentView student = GradeStudentView
+                            .builder()
+                            .id(s.getId())
+                            .name(s.getName())
+                            .surname(s.getSurname())
+                            .build();
+                    students.add(student);
+                }
+
+                for (Feedback f: l.getFeedbacks()) {
+                    GradeStudentView student = GradeStudentView
+                            .builder()
+                            .id(f.getStudent().getId())
+                            .name(f.getStudent().getName())
+                            .surname(f.getStudent().getSurname())
+                            .build();
+
+                    TeacherFeedbackView feedback = TeacherFeedbackView
+                            .builder()
+                            .id(f.getId())
+                            .text(f.getText())
+                            .createdAt(f.getCreatedAt())
+                            .student(student)
+                            .updatedAt(f.getUpdatedAt())
+                            .type(f.getType())
+                            .build();
+                    feedbacks.add(feedback);
+                }
+
+                TeacherLectureView lecture = TeacherLectureView
+                        .builder()
+                        .id(l.getId())
+                        .date(l.getCreatedAt())
+                        .subject(l.getSubject().getName())
+                        .attendants(students)
+                        .feedbacks(feedbacks)
+                        .grades(grades)
+                        .build();
+
+                return lecture;
             }
         }
 
-        for (Lecture l : subject.getLectures()) {
-            LectureView view = LectureView
-                    .builder()
-                    .id(l.getId())
-                    .teacher(String.format("%s %s", l.getTeacher().getName(), l.getTeacher().getSurname()))
-                    .date(l.getCreatedAt())
-                    .subject(l.getSubject().getName())
-                    .students(l.getDept().getStudents())
-                    .build();
-            lectures.add(view);
-        }
-
-        return lectures;
+        throw new UsernameNotFoundException("Lecture not found.");
     }
 }

@@ -16,5 +16,5 @@ public class SingleSubjectView {
     private @JsonView(Views.Public.class) Long id;
     private @JsonView(Views.Public.class) String name;
     private @JsonView(Views.Public.class) Semester semester;
-    private @JsonView(Views.Private.class) List<LectureView> lectures;
+    private @JsonView(Views.Public.class) List<LectureView> lectures;
 }

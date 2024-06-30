@@ -3,6 +3,7 @@ package com.example.server.user.student;
 import com.example.server.admin.department.Department;
 import com.example.server.management.feedback.Feedback;
 import com.example.server.management.grade.Grade;
+import com.example.server.management.lecture.Lecture;
 import com.example.server.user.User;
 import com.example.server.user.parent.Parent;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -28,4 +29,5 @@ public class Student {
     private int attended = 0;
     private int unattended = 0;
     private @JsonManagedReference @OneToMany(mappedBy = "student", fetch = FetchType.LAZY, cascade = { CascadeType.REFRESH }) List<Feedback> feedbacks;
+    private @JsonManagedReference @ManyToMany @JoinTable(name = "student_lectures", joinColumns = @JoinColumn(name = "student_id"), inverseJoinColumns = @JoinColumn(name = "lecture_id")) List<Lecture> lectures;
 }

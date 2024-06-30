@@ -14,15 +14,14 @@ import lombok.NoArgsConstructor;
 import java.util.Date;
 import java.util.List;
 
-
 @NoArgsConstructor @AllArgsConstructor @Data @Builder
-public class LectureView {
+public class TeacherLectureView {
     private @JsonView(Views.Public.class) Long id;
-    private @JsonView(Views.Public.class) String subject;
-    private @JsonView(Views.Public.class) String teacher;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm")
     private @JsonView(Views.Public.class) Date date;
+    private @JsonView(Views.Public.class) String subject;
     private @JsonView(Views.General.class) List<GradeStudentView> attendants;
     private @JsonView(Views.General.class) List<TeacherGradeView> grades;
     private @JsonView(Views.General.class) List<TeacherFeedbackView> feedbacks;
+    private @JsonView(Views.Private.class) List<GradeStudentView> students;
 }
