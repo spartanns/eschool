@@ -1,8 +1,10 @@
 package com.example.server.admin.logs;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.jpa.domain.JpaSort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -11,28 +13,29 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 @RestController @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/logs") @PreAuthorize("hasRole('ADMIN')")
 public class LogController {
-    private final LogService service;
+    private final Environment env;
 
-    @PostMapping("/upload") @PreAuthorize("hasAuthority('admin:create')")
-    LogResponse uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
-        Log log = service.saveLog(file);
-        String downloadURL = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/logs/")
-                .path(log.getId().toString())
-                .toUriString();
+    @GetMapping @PreAuthorize("hasAuthority('admin:read')")
+    ResponseEntity<Resource> download() throws IOException {
+        File file = new File(env.getProperty("env.LOG_PATH"));
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.add("Pragma", "no-cache");
+        headers.add("Expires", "0");
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=admin-logs.log");
 
-        return new LogResponse(log.getFilename(), downloadURL, file.getContentType(), file.getSize());
-    }
+        Path path = Paths.get(file.getAbsolutePath());
+        ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
-    @GetMapping("/download/{fileID}") @PreAuthorize("hasAuthority('admin:read')")
-    ResponseEntity<Resource> downloadFile(@PathVariable Long fileID) {
-        Log log = service.readLog(fileID);
-
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType(log.getFiletype()))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + log.getFilename() + "\"")
-                .body(new ByteArrayResource(log.getData()));
+        return ResponseEntity.ok().headers(headers).contentLength(file.length()).contentType(MediaType.APPLICATION_OCTET_STREAM).body(resource);
     }
 }
