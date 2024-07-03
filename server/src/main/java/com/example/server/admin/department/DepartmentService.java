@@ -1,5 +1,6 @@
 package com.example.server.admin.department;
 
+import com.example.server.admin.department.dao.AdminDeptView;
 import com.example.server.admin.department.dao.SingleDeptView;
 import com.example.server.admin.department.dto.DeptRequest;
 import com.example.server.management.lecture.Lecture;
@@ -7,11 +8,14 @@ import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.SubjectRepository;
 import com.example.server.management.subject.dao.SingleSubjectView;
+import com.example.server.user.AdminUserView;
 import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentRepository;
+import com.example.server.user.student.dao.AdminStudentView;
 import com.example.server.user.student.dao.GradeStudentView;
 import com.example.server.user.teacher.Teacher;
 import com.example.server.user.teacher.TeacherRepository;
+import com.example.server.user.teacher.dao.AdminTeacherView;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +52,137 @@ public class DepartmentService {
         return repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Department not found."));
     }
 
-    public List<Department> index() {
-        return repository.findAll();
+    public List<AdminDeptView> index() {
+        List<AdminDeptView> departments = new ArrayList<>();
+        List<SingleSubjectView> subjects = new ArrayList<>();
+        List<AdminTeacherView> teachers = new ArrayList<>();
+        List<AdminStudentView> students = new ArrayList<>();
+
+        for (Department d : repository.findAll()) {
+            for (Subject s : d.getSubjects()) {
+                SingleSubjectView subject = SingleSubjectView
+                        .builder()
+                        .id(s.getId())
+                        .name(s.getName())
+                        .semester(s.getSemester())
+                        .lectures(null)
+                        .build();
+                subjects.add(subject);
+            }
+
+            for (Teacher t : d.getTeachers()) {
+                AdminUserView user = AdminUserView
+                        .builder()
+                        .id(t.getUser().getId())
+                        .username(t.getUser().getUsername())
+                        .role(t.getUser().getRole())
+                        .build();
+
+                AdminTeacherView teacher = AdminTeacherView
+                        .builder()
+                        .id(t.getId())
+                        .name(t.getName())
+                        .surname(t.getSurname())
+                        .user(user)
+                        .build();
+                teachers.add(teacher);
+            }
+
+            for (Student s : d.getStudents()) {
+                AdminUserView user = AdminUserView
+                        .builder()
+                        .id(s.getUser().getId())
+                        .username(s.getUser().getUsername())
+                        .role(s.getUser().getRole())
+                        .build();
+
+                AdminStudentView student = AdminStudentView
+                        .builder()
+                        .id(s.getId())
+                        .name(s.getName())
+                        .surname(s.getSurname())
+                        .user(user)
+                        .build();
+                students.add(student);
+            }
+
+            AdminDeptView dept = AdminDeptView
+                    .builder()
+                    .id(d.getId())
+                    .name(d.getName())
+                    .subjects(subjects)
+                    .teachers(teachers)
+                    .students(students)
+                    .build();
+            departments.add(dept);
+        }
+
+        return departments;
+    }
+
+    public AdminDeptView readDeptView(Long id) {
+        Department d = readDept(id);
+        List<SingleSubjectView> subjects = new ArrayList<>();
+        List<AdminStudentView> students = new ArrayList<>();
+        List<AdminTeacherView> teachers = new ArrayList<>();
+
+        for (Subject s : d.getSubjects()) {
+            SingleSubjectView subject = SingleSubjectView
+                    .builder()
+                    .id(s.getId())
+                    .name(s.getName())
+                    .semester(s.getSemester())
+                    .lectures(null)
+                    .build();
+            subjects.add(subject);
+        }
+
+        for (Teacher t : d.getTeachers()) {
+            AdminUserView user = AdminUserView
+                    .builder()
+                    .id(t.getUser().getId())
+                    .username(t.getUser().getUsername())
+                    .role(t.getUser().getRole())
+                    .build();
+
+            AdminTeacherView teacher = AdminTeacherView
+                    .builder()
+                    .id(t.getId())
+                    .name(t.getName())
+                    .surname(t.getSurname())
+                    .user(user)
+                    .build();
+            teachers.add(teacher);
+        }
+
+        for (Student s : d.getStudents()) {
+            AdminUserView user = AdminUserView
+                    .builder()
+                    .id(s.getUser().getId())
+                    .username(s.getUser().getUsername())
+                    .role(s.getUser().getRole())
+                    .build();
+
+            AdminStudentView student = AdminStudentView
+                    .builder()
+                    .id(s.getId())
+                    .name(s.getName())
+                    .surname(s.getSurname())
+                    .user(user)
+                    .build();
+            students.add(student);
+        }
+
+        AdminDeptView dept = AdminDeptView
+                .builder()
+                .id(d.getId())
+                .name(d.getName())
+                .subjects(subjects)
+                .teachers(teachers)
+                .students(students)
+                .build();
+
+        return dept;
     }
 
     public String addStudent(Long deptID, Long studentID) {

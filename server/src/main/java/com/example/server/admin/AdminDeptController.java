@@ -2,7 +2,10 @@ package com.example.server.admin;
 
 import com.example.server.admin.department.Department;
 import com.example.server.admin.department.DepartmentService;
+import com.example.server.admin.department.dao.AdminDeptView;
 import com.example.server.admin.department.dto.DeptRequest;
+import com.example.server.security.Views;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,19 +29,19 @@ public class AdminDeptController {
         }
     }
 
-    @GetMapping @PreAuthorize("hasAuthority('admin:read')")
+    @GetMapping @PreAuthorize("hasAuthority('admin:read')") @JsonView(Views.Public.class)
     ResponseEntity<?> getAllDepts() {
         try {
-            return new ResponseEntity<List<Department>>(service.index(), HttpStatus.OK);
+            return new ResponseEntity<List<AdminDeptView>>(service.index(), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')")
+    @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')") @JsonView(Views.General.class)
     ResponseEntity<?> singleDept(@PathVariable Long id) {
         try {
-            return new ResponseEntity<Department>(service.readDept(id), HttpStatus.OK);
+            return new ResponseEntity<AdminDeptView>(service.readDeptView(id), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
