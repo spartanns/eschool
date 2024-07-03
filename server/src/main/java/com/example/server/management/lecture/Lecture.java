@@ -19,7 +19,7 @@ import java.util.List;
 
 @Entity @NoArgsConstructor @AllArgsConstructor @Data @Builder
 public class Lecture {
-    private @Id @GeneratedValue(strategy = GenerationType.AUTO) Long id;
+    private @Id @GeneratedValue(strategy = GenerationType.AUTO) @JsonView(Views.Public.class) Long id;
     private @JsonBackReference @ManyToOne @JoinColumn(name = "subject") Subject subject;
     private @JsonBackReference @ManyToOne @JoinColumn(name = "teacher") Teacher teacher;
     private @JsonManagedReference @ManyToOne @JoinColumn(name = "dept") @JsonIgnore Department dept;

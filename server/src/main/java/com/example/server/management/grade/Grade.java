@@ -2,11 +2,13 @@ package com.example.server.management.grade;
 
 import com.example.server.management.lecture.Lecture;
 import com.example.server.management.subject.Subject;
+import com.example.server.security.Views;
 import com.example.server.user.User;
 import com.example.server.user.student.Student;
 import com.example.server.user.teacher.Teacher;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,9 +19,9 @@ import java.util.Date;
 
 @Entity @NoArgsConstructor @AllArgsConstructor @Data @Builder
 public class Grade {
-    private @Id @GeneratedValue(strategy = GenerationType.AUTO) Long id;
-    private @Column(nullable = false) int value;
-    private @Enumerated @Column(nullable = false) Type type;
+    private @Id @GeneratedValue(strategy = GenerationType.AUTO) @JsonView(Views.Public.class) Long id;
+    private @Column(nullable = false) @JsonView(Views.Public.class) int value;
+    private @Enumerated @Column(nullable = false) @JsonView(Views.Public.class) Type type;
     private @JsonBackReference @ManyToOne @JoinColumn(name = "subject") Subject subject;
     private @JsonBackReference @ManyToOne @JoinColumn(name = "lecture") Lecture lecture;
     private @JsonBackReference @ManyToOne @JoinColumn(name = "student") Student student;

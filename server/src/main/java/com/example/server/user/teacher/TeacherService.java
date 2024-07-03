@@ -214,7 +214,6 @@ public class TeacherService {
                         .id(s.getId())
                         .name(s.getName())
                         .semester(s.getSemester())
-                        .lectures(lectures)
                         .build();
             }
 

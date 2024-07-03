@@ -47,12 +47,21 @@ public class AdminDeptController {
         }
     }
 
-    @PatchMapping("/{deptID}/teachers") @PreAuthorize("hasAuthority('admin:update')")
+    @PatchMapping("/{deptID}/teacher") @PreAuthorize("hasAuthority('admin:update')")
     ResponseEntity<String> addTeacherToDept(@PathVariable Long deptID, @RequestParam Long teacherID) {
         try {
             return new ResponseEntity<String>(service.addTeacher(deptID, teacherID), HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PatchMapping("/{deptID}/student") @PreAuthorize("hasAuthority('admin:update')")
+    ResponseEntity<String> addStudentToDept(@PathVariable Long deptID, @RequestParam Long studentID) {
+        try {
+            return new ResponseEntity<String>(service.addStudent(deptID, studentID), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
 

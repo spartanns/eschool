@@ -3,10 +3,14 @@ package com.example.server.admin.department;
 import com.example.server.admin.department.dao.AdminDeptView;
 import com.example.server.admin.department.dao.SingleDeptView;
 import com.example.server.admin.department.dto.DeptRequest;
+import com.example.server.management.grade.Grade;
+import com.example.server.management.grade.dao.AdminGradeView;
 import com.example.server.management.lecture.Lecture;
+import com.example.server.management.lecture.dao.AdminLectureView;
 import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.SubjectRepository;
+import com.example.server.management.subject.dao.AdminSubjectView;
 import com.example.server.management.subject.dao.SingleSubjectView;
 import com.example.server.user.AdminUserView;
 import com.example.server.user.student.Student;
@@ -65,7 +69,6 @@ public class DepartmentService {
                         .id(s.getId())
                         .name(s.getName())
                         .semester(s.getSemester())
-                        .lectures(null)
                         .build();
                 subjects.add(subject);
             }
@@ -125,14 +128,131 @@ public class DepartmentService {
         List<SingleSubjectView> subjects = new ArrayList<>();
         List<AdminStudentView> students = new ArrayList<>();
         List<AdminTeacherView> teachers = new ArrayList<>();
+        List<AdminGradeView> grades = new ArrayList<>();
+        List<AdminLectureView> lectures = new ArrayList<>();
+        List<AdminStudentView> attendants = new ArrayList<>();
 
         for (Subject s : d.getSubjects()) {
+            for (Grade g : s.getGrades()) {
+                AdminSubjectView subject = AdminSubjectView
+                        .builder()
+                        .id(g.getSubject().getId())
+                        .name(g.getSubject().getName())
+                        .hours(g.getSubject().getHours())
+                        .semester(g.getSubject().getSemester())
+                        .dept(g.getStudent().getDept().getName())
+                        .lectures(s.getLectures())
+                        .grades(s.getGrades())
+                        .build();
+
+                AdminUserView teacherUser = AdminUserView
+                        .builder()
+                        .id(g.getCreatedBy().getId())
+                        .username(g.getCreatedBy().getUser().getUsername())
+                        .role(g.getCreatedBy().getUser().getRole())
+                        .build();
+
+                AdminTeacherView teacher = AdminTeacherView
+                        .builder()
+                        .id(g.getCreatedBy().getId())
+                        .name(g.getCreatedBy().getName())
+                        .surname(g.getCreatedBy().getSurname())
+                        .user(teacherUser)
+                        .build();
+
+                AdminUserView studentUser = AdminUserView
+                        .builder()
+                        .id(g.getStudent().getUser().getId())
+                        .username(g.getStudent().getUser().getUsername())
+                        .role(g.getStudent().getUser().getRole())
+                        .build();
+
+                AdminStudentView student = AdminStudentView
+                        .builder()
+                        .id(g.getStudent().getId())
+                        .name(g.getStudent().getName())
+                        .surname(g.getStudent().getSurname())
+                        .user(studentUser)
+                        .build();
+
+                AdminGradeView grade = AdminGradeView
+                        .builder()
+                        .id(g.getId())
+                        .value(g.getValue())
+                        .type(g.getType())
+                        .subject(subject)
+                        .createdAt(g.getCreatedAt())
+                        .updatedAt(g.getUpdatedAt())
+                        .createdBy(teacher)
+                        .student(student)
+                        .build();
+                grades.add(grade);
+            }
+
+            for (Lecture l : s.getLectures()) {
+                AdminSubjectView subject = AdminSubjectView
+                        .builder()
+                        .id(s.getId())
+                        .name(s.getName())
+                        .hours(s.getHours())
+                        .semester(s.getSemester())
+                        .dept(s.getDept().getName())
+                        .lectures(s.getLectures())
+                        .grades(s.getGrades())
+                        .build();
+
+                for (Student st : l.getAttendants()) {
+                    AdminUserView user = AdminUserView
+                            .builder()
+                            .id(st.getUser().getId())
+                            .username(st.getUser().getUsername())
+                            .role(st.getUser().getRole())
+                            .build();
+
+                    AdminStudentView student = AdminStudentView
+                            .builder()
+                            .id(st.getId())
+                            .name(st.getName())
+                            .surname(st.getSurname())
+                            .user(user)
+                            .build();
+                    attendants.add(student);
+                }
+
+                AdminUserView user = AdminUserView
+                        .builder()
+                        .id(l.getTeacher().getUser().getId())
+                        .username(l.getTeacher().getUser().getUsername())
+                        .role(l.getTeacher().getUser().getRole())
+                        .build();
+
+                AdminTeacherView teacher = AdminTeacherView
+                        .builder()
+                        .id(l.getTeacher().getId())
+                        .name(l.getTeacher().getName())
+                        .surname(l.getTeacher().getSurname())
+                        .user(user)
+                        .build();
+
+                AdminLectureView lecture = AdminLectureView
+                        .builder()
+                        .id(l.getId())
+                        .subject(subject)
+                        .grades(grades)
+                        .feedbacks(l.getFeedbacks())
+                        .teacher(teacher)
+                        .attendants(attendants)
+                        .createdAt(l.getCreatedAt())
+                        .feedbacks(l.getFeedbacks())
+                        .build();
+                lectures.add(lecture);
+            }
+
             SingleSubjectView subject = SingleSubjectView
                     .builder()
                     .id(s.getId())
                     .name(s.getName())
                     .semester(s.getSemester())
-                    .lectures(null)
                     .build();
             subjects.add(subject);
         }
@@ -180,6 +300,8 @@ public class DepartmentService {
                 .subjects(subjects)
                 .teachers(teachers)
                 .students(students)
+                .grades(grades)
+                .lectures(lectures)
                 .build();
 
         return dept;
@@ -273,7 +395,6 @@ public class DepartmentService {
                         .builder()
                         .id(subject.getId())
                         .name(subject.getName())
-                        .lectures(lectures)
                         .build();
                 subjects.add(s);
 
@@ -329,7 +450,6 @@ public class DepartmentService {
                             .id(s.getId())
                             .semester(s.getSemester())
                             .name(s.getName())
-                            .lectures(lectures)
                             .build();
                     subjects.add(subject);
                 }
