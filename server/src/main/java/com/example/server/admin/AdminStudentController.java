@@ -2,6 +2,7 @@ package com.example.server.admin;
 
 import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentService;
+import com.example.server.user.student.dao.AdminStudentView;
 import com.example.server.user.student.dto.StudentRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +19,8 @@ public class AdminStudentController {
     private final StudentService service;
 
     @GetMapping @PreAuthorize("hasAuthority('admin:read')")
-    ResponseEntity<List<Student>> getAllStudents() {
-        return new ResponseEntity<List<Student>>(service.index(), HttpStatus.OK);
+    ResponseEntity<List<AdminStudentView>> getAllStudents() {
+        return new ResponseEntity<List<AdminStudentView>>(service.index(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')")

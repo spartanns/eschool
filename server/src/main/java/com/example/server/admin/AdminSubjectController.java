@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController @RequiredArgsConstructor
 @RequestMapping("/api/v1/mgmt/subjects") @PreAuthorize("hasRole('MANAGER')")
-public class SubjectController {
+public class AdminSubjectController {
     private final SubjectService service;
 
     @GetMapping @PreAuthorize("hasAuthority('manager:read')")

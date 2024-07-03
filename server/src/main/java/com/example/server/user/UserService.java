@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service @RequiredArgsConstructor
@@ -16,8 +17,20 @@ public class UserService {
     private final PasswordEncoder encoder;
     private Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
 
-    public List<User> index() {
-        return repository.findAll();
+    public List<AdminUserView> index() {
+        List<AdminUserView> users = new ArrayList<>();
+
+        for (User u : repository.findAll()) {
+            AdminUserView user = AdminUserView
+                    .builder()
+                    .id(u.getId())
+                    .username(u.getUsername())
+                    .role(u.getRole())
+                    .build();
+            users.add(user);
+        }
+
+        return users;
     }
 
     public User readUser(Long id) {

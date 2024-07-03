@@ -10,9 +10,11 @@ import com.example.server.management.lecture.Lecture;
 import com.example.server.management.lecture.LectureRepository;
 import com.example.server.management.lecture.dao.GradeLectureView;
 import com.example.server.management.subject.Subject;
+import com.example.server.user.AdminUserView;
 import com.example.server.user.Role;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
+import com.example.server.user.student.dao.AdminStudentView;
 import com.example.server.util.email.Email;
 import com.example.server.util.email.EmailService;
 import com.example.server.user.parent.Parent;
@@ -76,8 +78,28 @@ public class StudentService {
         return student;
     }
 
-    public List<Student> index() {
-        return repository.findAll();
+    public List<AdminStudentView> index() {
+        List<AdminStudentView> students = new ArrayList<>();
+
+        for (Student s : repository.findAll()) {
+            AdminUserView user = AdminUserView
+                    .builder()
+                    .id(s.getUser().getId())
+                    .username(s.getUser().getUsername())
+                    .role(s.getUser().getRole())
+                    .build();
+
+            AdminStudentView student = AdminStudentView
+                    .builder()
+                    .id(s.getId())
+                    .name(s.getName())
+                    .surname(s.getSurname())
+                    .user(user)
+                    .build();
+            students.add(student);
+        }
+
+        return students;
     }
 
     public Student saveStudent(Student student) {

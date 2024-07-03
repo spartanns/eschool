@@ -5,9 +5,11 @@ import com.example.server.management.feedback.dao.FeedbackView;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.dao.GradeView;
 import com.example.server.management.lecture.dao.GradeLectureView;
+import com.example.server.user.AdminUserView;
 import com.example.server.user.Role;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
+import com.example.server.user.parent.dao.AdminParentView;
 import com.example.server.user.parent.dao.PrivateParentView;
 import com.example.server.user.parent.dto.ParentRequest;
 import com.example.server.user.student.Student;
@@ -56,8 +58,28 @@ public class ParentService {
         return parent;
     }
 
-    public List<Parent> index() {
-        return repository.findAll();
+    public List<AdminParentView> index() {
+        List<AdminParentView> parents = new ArrayList<>();
+
+        for (Parent p : repository.findAll()) {
+            AdminUserView user = AdminUserView
+                    .builder()
+                    .id(p.getUser().getId())
+                    .username(p.getUser().getUsername())
+                    .role(p.getUser().getRole())
+                    .build();
+
+            AdminParentView parent = AdminParentView
+                    .builder()
+                    .id(p.getId())
+                    .name(p.getName())
+                    .surname(p.getSurname())
+                    .user(user)
+                    .build();
+            parents.add(parent);
+        }
+
+        return parents;
     }
 
     public Parent readParent(Long id) {

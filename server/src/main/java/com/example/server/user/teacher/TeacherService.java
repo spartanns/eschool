@@ -14,11 +14,13 @@ import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.lecture.dao.TeacherLectureView;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.dao.SingleSubjectView;
+import com.example.server.user.AdminUserView;
 import com.example.server.user.Role;
 import com.example.server.user.User;
 import com.example.server.user.UserRepository;
 import com.example.server.user.student.Student;
 import com.example.server.user.student.dao.GradeStudentView;
+import com.example.server.user.teacher.dao.AdminTeacherView;
 import com.example.server.user.teacher.dao.TeacherView;
 import com.example.server.util.email.Email;
 import com.example.server.util.email.EmailService;
@@ -70,8 +72,27 @@ public class TeacherService {
         return teacher;
     }
 
-    public List<Teacher> index() {
-        return repository.findAll();
+    public List<AdminTeacherView> index() {
+        List<AdminTeacherView> teachers = new ArrayList<>();
+
+        for (Teacher t : repository.findAll()) {
+            AdminUserView user = AdminUserView
+                    .builder()
+                    .id(t.getUser().getId())
+                    .username(t.getUser().getUsername())
+                    .role(t.getUser().getRole())
+                    .build();
+            AdminTeacherView teacher = AdminTeacherView
+                    .builder()
+                    .id(t.getId())
+                    .name(t.getName())
+                    .surname(t.getSurname())
+                    .user(user)
+                    .build();
+            teachers.add(teacher);
+        }
+
+        return teachers;
     }
 
     public Teacher readTeacher(Long id) {

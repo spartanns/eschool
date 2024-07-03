@@ -2,6 +2,7 @@ package com.example.server.admin;
 
 import com.example.server.user.teacher.Teacher;
 import com.example.server.user.teacher.TeacherService;
+import com.example.server.user.teacher.dao.AdminTeacherView;
 import com.example.server.user.teacher.dto.TeacherRequest;
 import com.example.server.user.teacher.dto.TeacherUpdateRequest;
 import jakarta.validation.Valid;
@@ -28,8 +29,8 @@ public class AdminTeacherController {
     }
 
     @GetMapping @PreAuthorize("hasAuthority('admin:read')")
-    ResponseEntity<List<Teacher>> getAllTeachers() {
-        return new ResponseEntity<List<Teacher>>(service.index(), HttpStatus.OK);
+    ResponseEntity<List<AdminTeacherView>> getAllTeachers() {
+        return new ResponseEntity<List<AdminTeacherView>>(service.index(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')")

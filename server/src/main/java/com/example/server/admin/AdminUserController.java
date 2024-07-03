@@ -2,6 +2,7 @@ package com.example.server.admin;
 
 import com.example.server.auth.dto.RegisterRequest;
 import com.example.server.security.Views;
+import com.example.server.user.AdminUserView;
 import com.example.server.user.User;
 import com.example.server.user.UserService;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -17,14 +18,14 @@ import java.util.List;
 
 @RestController @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')") @RequestMapping("/api/v1/admin/users")
-public class UserController {
+public class AdminUserController {
    private final UserService service;
    private final PasswordEncoder encoder;
 
-    @GetMapping @PreAuthorize("hasAuthority('admin:read')") @JsonView(Views.Admin.class)
+    @GetMapping @PreAuthorize("hasAuthority('admin:read')") @JsonView(Views.Public.class)
     ResponseEntity<?> showUsers() {
         try {
-            return new ResponseEntity<List<User>>(service.index(), HttpStatus.OK);
+            return new ResponseEntity<List<AdminUserView>>(service.index(), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -39,7 +40,7 @@ public class UserController {
         }
     }
 
-    @DeleteMapping("/{id}") @PreAuthorize("hasAuthority('admin:delete')")
+    @DeleteMapping("/{id}/delete") @PreAuthorize("hasAuthority('admin:delete')")
     ResponseEntity<?> removeUser(@Valid @PathVariable Long id) {
         try {
             return new ResponseEntity<String>(service.deleteUser(id), HttpStatus.NO_CONTENT);
@@ -48,7 +49,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')") @JsonView(Views.Admin.class)
+    @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')")
     ResponseEntity<?> singleUser(@PathVariable Long id) {
         try {
             return new ResponseEntity<User>(service.readUser(id), HttpStatus.OK);
