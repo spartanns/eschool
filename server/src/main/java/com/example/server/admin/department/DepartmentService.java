@@ -5,12 +5,14 @@ import com.example.server.admin.department.dao.SingleDeptView;
 import com.example.server.admin.department.dto.DeptRequest;
 import com.example.server.management.grade.Grade;
 import com.example.server.management.grade.dao.AdminGradeView;
+import com.example.server.management.grade.dao.LectureGradeView;
 import com.example.server.management.lecture.Lecture;
 import com.example.server.management.lecture.dao.AdminLectureView;
 import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.SubjectRepository;
 import com.example.server.management.subject.dao.AdminSubjectView;
+import com.example.server.management.subject.dao.LectureSubjectView;
 import com.example.server.management.subject.dao.SingleSubjectView;
 import com.example.server.user.AdminUserView;
 import com.example.server.user.student.Student;
@@ -128,7 +130,7 @@ public class DepartmentService {
         List<SingleSubjectView> subjects = new ArrayList<>();
         List<AdminStudentView> students = new ArrayList<>();
         List<AdminTeacherView> teachers = new ArrayList<>();
-        List<AdminGradeView> grades = new ArrayList<>();
+        List<LectureGradeView> grades = new ArrayList<>();
         List<AdminLectureView> lectures = new ArrayList<>();
         List<AdminStudentView> attendants = new ArrayList<>();
 
@@ -175,30 +177,23 @@ public class DepartmentService {
                         .user(studentUser)
                         .build();
 
-                AdminGradeView grade = AdminGradeView
+                LectureGradeView grade = LectureGradeView
                         .builder()
                         .id(g.getId())
                         .value(g.getValue())
                         .type(g.getType())
-                        .subject(subject)
-                        .createdAt(g.getCreatedAt())
-                        .updatedAt(g.getUpdatedAt())
-                        .createdBy(teacher)
                         .student(student)
                         .build();
                 grades.add(grade);
             }
 
             for (Lecture l : s.getLectures()) {
-                AdminSubjectView subject = AdminSubjectView
+                LectureSubjectView subject = LectureSubjectView
                         .builder()
                         .id(s.getId())
                         .name(s.getName())
                         .hours(s.getHours())
                         .semester(s.getSemester())
-                        .dept(s.getDept().getName())
-                        .lectures(s.getLectures())
-                        .grades(s.getGrades())
                         .build();
 
                 for (Student st : l.getAttendants()) {

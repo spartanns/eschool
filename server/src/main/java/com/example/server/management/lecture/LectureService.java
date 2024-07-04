@@ -1,19 +1,28 @@
 package com.example.server.management.lecture;
 
 import com.example.server.admin.department.Department;
+import com.example.server.admin.department.dao.AdminDeptView;
 import com.example.server.management.feedback.Feedback;
 import com.example.server.management.feedback.dao.TeacherFeedbackView;
 import com.example.server.management.grade.Grade;
+import com.example.server.management.grade.dao.AdminGradeView;
+import com.example.server.management.grade.dao.LectureGradeView;
 import com.example.server.management.grade.dao.TeacherGradeView;
+import com.example.server.management.lecture.dao.AdminLectureView;
 import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.lecture.dao.TeacherLectureView;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.SubjectRepository;
+import com.example.server.management.subject.dao.AdminSubjectView;
+import com.example.server.management.subject.dao.LectureSubjectView;
+import com.example.server.user.AdminUserView;
 import com.example.server.user.student.Student;
 import com.example.server.user.student.StudentRepository;
+import com.example.server.user.student.dao.AdminStudentView;
 import com.example.server.user.student.dao.GradeStudentView;
 import com.example.server.user.teacher.Teacher;
 import com.example.server.user.teacher.TeacherRepository;
+import com.example.server.user.teacher.dao.AdminTeacherView;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -253,5 +262,132 @@ public class LectureService {
         }
 
         throw new UsernameNotFoundException("Lecture not found.");
+    }
+
+    public AdminLectureView readAdminLectureView(Long id) {
+        Lecture l = readLecture(id);
+        List<AdminStudentView> attendants = new ArrayList<>();
+        List<LectureGradeView> grades = new ArrayList<>();
+
+        AdminUserView teacherUser = AdminUserView
+                .builder()
+                .id(l.getTeacher().getUser().getId())
+                .username(l.getTeacher().getUser().getUsername())
+                .role(l.getTeacher().getUser().getRole())
+                .build();
+
+        AdminTeacherView teacher = AdminTeacherView
+                .builder()
+                .id(l.getTeacher().getId())
+                .name(l.getTeacher().getName())
+                .surname(l.getTeacher().getSurname())
+                .user(teacherUser)
+                .build();
+
+        LectureSubjectView subject = LectureSubjectView
+                .builder()
+                .id(l.getSubject().getId())
+                .name(l.getSubject().getName())
+                .semester(l.getSubject().getSemester())
+                .hours(l.getSubject().getHours())
+                .build();
+
+        for (Student s : l.getAttendants()) {
+            AdminUserView studentUser = AdminUserView
+                    .builder()
+                    .id(s.getUser().getId())
+                    .username(s.getUser().getUsername())
+                    .role(s.getUser().getRole())
+                    .build();
+
+            AdminStudentView attendant = AdminStudentView
+                    .builder()
+                    .id(s.getId())
+                    .name(s.getName())
+                    .surname(s.getSurname())
+                    .user(studentUser)
+                    .build();
+            attendants.add(attendant);
+        }
+
+        AdminDeptView dept = AdminDeptView
+                .builder()
+                .id(l.getSubject().getDept().getId())
+                .name(l.getSubject().getDept().getName())
+                .build();
+
+        for (Grade g : l.getGrades()) {
+            AdminUserView user = AdminUserView
+                    .builder()
+                    .id(g.getStudent().getUser().getId())
+                    .username(g.getStudent().getUser().getUsername())
+                    .role(g.getStudent().getUser().getRole())
+                    .build();
+
+            AdminStudentView student = AdminStudentView
+                    .builder()
+                    .id(g.getStudent().getId())
+                    .name(g.getStudent().getName())
+                    .surname(g.getStudent().getSurname())
+                    .user(user)
+                    .build();
+
+            LectureGradeView grade = LectureGradeView
+                    .builder()
+                    .id(g.getId())
+                    .value(g.getValue())
+                    .type(g.getType())
+                    .student(student)
+                    .build();
+            grades.add(grade);
+        }
+
+        AdminLectureView lecture = AdminLectureView
+                .builder()
+                .id(l.getId())
+                .createdAt(l.getCreatedAt())
+                .teacher(teacher)
+                .subject(subject)
+                .attendants(attendants)
+                .feedbacks(l.getFeedbacks())
+                .grades(grades)
+                .department(dept)
+                .build();
+
+        return lecture;
+    }
+
+    public String deleteLecture(Long id) {
+        Lecture l = readLecture(id);
+        repository.delete(l);
+
+        logger.warn(String.format("Lecture with ID: %d deleted.", id));
+
+        return String.format("Lecture with ID: %d deleted.", id);
+    }
+
+    public Lecture adminCreateLecture() {
+        Lecture lecture = Lecture
+                .builder()
+                .createdAt(new Date(System.currentTimeMillis()))
+                .build();
+        repository.save(lecture);
+
+        logger.info(String.format("Lecture with ID: %d created at %s.", lecture.getId(), lecture.getCreatedAt().toString()));
+
+        return lecture;
+    }
+
+    public String updateLectureTeacher(Long lectureID, Long teacherID) {
+        Lecture lecture = readLecture(lectureID);
+        Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        lecture.setTeacher(teacher);
+        repository.save(lecture);
+        teacher.getLectures().add(lecture);
+        teacherRepository.save(teacher);
+
+        logger.info(String.format("Teacher %s %s added to lecture ID: %d.", teacher.getName(), teacher.getSurname(), lecture.getId()));
+
+        return String.format("Teacher %s %s added to lecture ID: %d.", teacher.getName(), teacher.getSurname(), lecture.getId());
     }
 }

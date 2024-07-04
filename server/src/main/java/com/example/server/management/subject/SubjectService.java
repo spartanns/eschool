@@ -3,6 +3,7 @@ package com.example.server.management.subject;
 import com.example.server.admin.department.Department;
 import com.example.server.admin.department.DepartmentRepository;
 import com.example.server.management.lecture.Lecture;
+import com.example.server.management.lecture.dao.GradeLectureView;
 import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.subject.dao.AdminSubjectView;
 import com.example.server.management.subject.dao.SingleSubjectView;
@@ -118,18 +119,16 @@ public class SubjectService {
 
     public SingleSubjectView readTeacherDeptSubject(Long teacherID, Long deptID, Long subjectID) {
         Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
-        List<LectureView> lectures = new ArrayList<>();
+        List<GradeLectureView> lectures = new ArrayList<>();
 
         for (Department d : teacher.getDepartments()) {
             if (d.getId().equals(deptID)) {
                 for (Subject s : d.getSubjects()) {
                     if (s.getId().equals(subjectID)) {
                         for (Lecture l : s.getLectures()) {
-                            LectureView lecture = LectureView
+                            GradeLectureView lecture = GradeLectureView
                                     .builder()
                                     .id(l.getId())
-                                    .subject(s.getName())
-                                    .teacher(String.format("%s %s", l.getTeacher().getName(), l.getTeacher().getSurname()))
                                     .date(l.getCreatedAt())
                                     .build();
                             lectures.add(lecture);
@@ -139,6 +138,7 @@ public class SubjectService {
                                 .id(s.getId())
                                 .name(s.getName())
                                 .semester(s.getSemester())
+                                .lectures(lectures)
                                 .build();
 
                         return subject;

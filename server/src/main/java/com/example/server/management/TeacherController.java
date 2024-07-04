@@ -115,7 +115,7 @@ public class TeacherController {
         }
     }
 
-    @GetMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Public.class)
+    @GetMapping("/{teacherID}/departments/{deptID}/subjects/{subjectID}") @PreAuthorize("hasAuthority('manager:read')") @JsonView(Views.Private.class)
     ResponseEntity<?> singleSubject(@RequestHeader("Authorization") String token, @PathVariable Long teacherID, @PathVariable Long deptID, @PathVariable Long subjectID) {
         try {
             User user = userService.readUserByUsername(jwtService.extractUsername(token.substring(7)));

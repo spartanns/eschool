@@ -1,6 +1,6 @@
 package com.example.server.admin.department.dao;
 
-import com.example.server.management.grade.dao.AdminGradeView;
+import com.example.server.management.grade.dao.LectureGradeView;
 import com.example.server.management.lecture.dao.AdminLectureView;
 import com.example.server.management.subject.dao.SingleSubjectView;
 import com.example.server.security.Views;
@@ -21,6 +21,6 @@ public class AdminDeptView {
     private @JsonView(Views.General.class) List<SingleSubjectView> subjects;
     private @JsonView(Views.General.class) List<AdminTeacherView> teachers;
     private @JsonView(Views.General.class) List<AdminStudentView> students;
-    private @JsonView(Views.General.class) List<AdminGradeView> grades;
+    private @JsonView(Views.General.class) List<LectureGradeView> grades;
     private @JsonView(Views.General.class) List<AdminLectureView> lectures;
 }
