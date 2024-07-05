@@ -28,6 +28,15 @@ public class AdminFeedbackController {
         }
     }
 
+    @GetMapping("/{id}") @PreAuthorize("hasAuthority('admin:read')") @JsonView(Views.Public.class)
+    ResponseEntity<?> viewFeedback(@PathVariable Long id) {
+        try {
+            return new ResponseEntity<Feedback>(service.readFeedback(id), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
     @PostMapping("/new") @PreAuthorize("hasAuthority('admin:update')")
     ResponseEntity<String> addNewFeedback(@Valid @RequestBody FeedbackRequest request) {
        try {
@@ -43,6 +52,15 @@ public class AdminFeedbackController {
             return new ResponseEntity<String>(service.deleteFeedback(id), HttpStatus.NO_CONTENT);
         } catch (Exception e) {
             return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PatchMapping("/{id}/update") @PreAuthorize("hasAuthority('admin:update')")
+    ResponseEntity<String> updateFeedback(@PathVariable Long id, @Valid @RequestBody FeedbackRequest request) {
+        try {
+            return new ResponseEntity<String>(service.updateFeedback(id, request), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 }

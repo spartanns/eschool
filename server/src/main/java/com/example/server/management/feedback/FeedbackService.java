@@ -175,6 +175,21 @@ public class FeedbackService {
         }
         throw new UsernameNotFoundException("Feedback not found.");
     }
+
+    public Feedback readFeedback(Long id) {
+        return repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Feedback not found"));
+    }
+
+    public String updateFeedback(Long id, FeedbackRequest request) {
+        Feedback feedback = readFeedback(id);
+        feedback.setType(request.getType());
+        feedback.setText(request.getText());
+        repository.save(feedback);
+
+        logger.info(String.format("Feedback with ID: %d changed to %s. Comment: %s", feedback.getId(), feedback.getType().name(), feedback.getText()));
+
+        return String.format("Feedback with ID: %d changed to %s. Comment: %s", feedback.getId(), feedback.getType().name(), feedback.getText());
+    }
 }
 
 
