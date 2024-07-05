@@ -41,7 +41,7 @@ public class AdminStudentController {
         }
     }
 
-    @PatchMapping("/{studentID}") @PreAuthorize("hasAuthority('admin:update')")
+    @PatchMapping("/{studentID}/parent") @PreAuthorize("hasAuthority('admin:update')")
     ResponseEntity<?> updateStudentParent(@PathVariable Long studentID, @RequestParam Long parentID) {
         try {
             return new ResponseEntity<Student>(service.updateParent(studentID, parentID), HttpStatus.NO_CONTENT);
