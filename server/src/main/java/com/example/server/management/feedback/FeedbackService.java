@@ -94,6 +94,33 @@ public class FeedbackService {
         throw new UsernameNotFoundException("Student not found.");
     }
 
+    public List<Feedback> index() {
+        return repository.findAll();
+    }
+
+    public String adminCreateFeedback(FeedbackRequest request) {
+        Feedback feedback = Feedback
+                .builder()
+                .createdAt(new Date(System.currentTimeMillis()))
+                .text(request.getText())
+                .type(request.getType())
+                .build();
+        repository.save(feedback);
+
+        logger.info(String.format("Feedback with ID: %d created.", feedback.getId()));
+
+        return String.format("Feedback with ID: %d created.", feedback.getId());
+    }
+
+    public String deleteFeedback(Long id) {
+        Feedback feedback = repository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Feedback not found."));
+        repository.delete(feedback);
+
+        logger.warn(String.format("Feedback with ID: %d deleted.", id));
+
+        return String.format("Feedback with ID: %d deleted.", id);
+    }
+
     public List<FeedbackView> readStudentFeedbacks(Long id) {
         List<FeedbackView> feedbacks = new ArrayList<>();
         Student student = studentRepository.findById(id).orElseThrow(() -> new UsernameNotFoundException("Student not found."));
