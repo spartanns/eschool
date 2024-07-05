@@ -1,6 +1,5 @@
 package com.example.server.user.teacher.dao;
 
-import com.example.server.admin.department.Department;
 import com.example.server.admin.department.dao.SingleDeptView;
 import com.example.server.management.feedback.dao.TeacherFeedbackView;
 import com.example.server.management.grade.dao.TeacherGradeView;

@@ -1,7 +1,6 @@
 package com.example.server.management.subject.dao;
 
 import com.example.server.management.lecture.dao.GradeLectureView;
-import com.example.server.management.lecture.dao.LectureView;
 import com.example.server.management.subject.Semester;
 import com.example.server.security.Views;
 import com.fasterxml.jackson.annotation.JsonView;

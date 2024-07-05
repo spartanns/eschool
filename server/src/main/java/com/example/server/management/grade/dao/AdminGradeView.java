@@ -1,7 +1,6 @@
 package com.example.server.management.grade.dao;
 
 import com.example.server.management.grade.Type;
-import com.example.server.management.subject.dao.AdminSubjectView;
 import com.example.server.management.subject.dao.LectureSubjectView;
 import com.example.server.security.Views;
 import com.example.server.user.student.dao.AdminStudentView;

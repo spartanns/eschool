@@ -42,7 +42,6 @@ public class UserService {
     }
 
     public User createUser(RegisterRequest request) {
-        // TODO: Role RequestParam
         User user = User
                 .builder()
                 .username(request.getUsername())

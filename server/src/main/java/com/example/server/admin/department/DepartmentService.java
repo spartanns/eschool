@@ -4,7 +4,6 @@ import com.example.server.admin.department.dao.AdminDeptView;
 import com.example.server.admin.department.dao.SingleDeptView;
 import com.example.server.admin.department.dto.DeptRequest;
 import com.example.server.management.grade.Grade;
-import com.example.server.management.grade.dao.AdminGradeView;
 import com.example.server.management.grade.dao.LectureGradeView;
 import com.example.server.management.lecture.Lecture;
 import com.example.server.management.lecture.dao.AdminLectureView;

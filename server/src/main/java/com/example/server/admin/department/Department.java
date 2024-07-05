@@ -2,12 +2,10 @@ package com.example.server.admin.department;
 
 import com.example.server.management.lecture.Lecture;
 import com.example.server.management.subject.Subject;
-import com.example.server.security.Views;
 import com.example.server.user.student.Student;
 import com.example.server.user.teacher.Teacher;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
