@@ -19,9 +19,9 @@ import java.util.Date;
 
 @Entity @NoArgsConstructor @AllArgsConstructor @Data @Builder
 public class Grade {
-    private @Id @GeneratedValue(strategy = GenerationType.AUTO) @JsonView(Views.Public.class) Long id;
-    private @Column(nullable = false) @JsonView(Views.Public.class) int value;
-    private @Enumerated @Column(nullable = false) @JsonView(Views.Public.class) Type type;
+    private @Id @GeneratedValue(strategy = GenerationType.AUTO) Long id;
+    private @Column(nullable = false) int value;
+    private @Enumerated @Column(nullable = false) Type type;
     private @JsonBackReference @ManyToOne @JoinColumn(name = "subject") Subject subject;
     private @JsonBackReference @ManyToOne @JoinColumn(name = "lecture") Lecture lecture;
     private @JsonBackReference @ManyToOne @JoinColumn(name = "student") Student student;

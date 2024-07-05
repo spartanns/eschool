@@ -1,6 +1,7 @@
 package com.example.server.management.grade;
 
 import com.example.server.admin.department.Department;
+import com.example.server.management.grade.dao.AdminGradeView;
 import com.example.server.management.grade.dao.GradeView;
 import com.example.server.management.grade.dao.TeacherGradeView;
 import com.example.server.management.grade.dto.GradeRequest;
@@ -9,6 +10,11 @@ import com.example.server.management.lecture.LectureRepository;
 import com.example.server.management.lecture.dao.GradeLectureView;
 import com.example.server.management.subject.Subject;
 import com.example.server.management.subject.SubjectRepository;
+import com.example.server.management.subject.dao.AdminSubjectView;
+import com.example.server.management.subject.dao.LectureSubjectView;
+import com.example.server.user.AdminUserView;
+import com.example.server.user.student.dao.AdminStudentView;
+import com.example.server.user.teacher.dao.AdminTeacherView;
 import com.example.server.util.email.Email;
 import com.example.server.util.email.EmailService;
 import com.example.server.user.student.Student;
@@ -555,5 +561,145 @@ public class GradeService {
         logger.info(String.format("%s %s updated %s %s's grade in %s to %d", teacher.getName(), teacher.getSurname(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getSubject().getName(), grade.getValue()));
 
         return String.format("%s %s updated %s %s's grade in %s to %d", teacher.getName(), teacher.getSurname(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getSubject().getName(), grade.getValue());
+    }
+
+    public AdminGradeView readAdminGradeView(Long id) {
+        Grade g = readGrade(id);
+
+        LectureSubjectView subject = LectureSubjectView
+                .builder()
+                .id(g.getSubject().getId())
+                .semester(g.getSubject().getSemester())
+                .hours(g.getSubject().getHours())
+                .name(g.getSubject().getName())
+                .build();
+
+        AdminUserView teacherUser = AdminUserView
+                .builder()
+                .id(g.getCreatedBy().getUser().getId())
+                .username(g.getCreatedBy().getUser().getUsername())
+                .role(g.getCreatedBy().getUser().getRole())
+                .build();
+
+        AdminTeacherView teacher = AdminTeacherView
+                .builder()
+                .id(g.getCreatedBy().getId())
+                .name(g.getCreatedBy().getName())
+                .surname(g.getCreatedBy().getSurname())
+                .user(teacherUser)
+                .build();
+
+        AdminUserView studentUser = AdminUserView
+                .builder()
+                .id(g.getStudent().getUser().getId())
+                .username(g.getStudent().getUser().getUsername())
+                .role(g.getStudent().getUser().getRole())
+                .build();
+
+        AdminStudentView student = AdminStudentView
+                .builder()
+                .id(g.getStudent().getId())
+                .name(g.getStudent().getName())
+                .surname(g.getStudent().getSurname())
+                .user(studentUser)
+                .build();
+
+        AdminGradeView grade = AdminGradeView
+                .builder()
+                .id(g.getId())
+                .value(g.getValue())
+                .type(g.getType())
+                .createdAt(g.getCreatedAt())
+                .updatedAt(g.getUpdatedAt())
+                .subject(subject)
+                .createdBy(teacher)
+                .student(student)
+                .build();
+
+        return grade;
+    }
+
+    public String createGrade(int value, Type type) {
+        Grade grade = Grade
+                .builder()
+                .value(value)
+                .type(type)
+                .createdAt(new Date(System.currentTimeMillis()))
+                .build();
+
+        repository.save(grade);
+
+        logger.info(String.format("Grade of type %s with value %d created.", grade.getType().name(), grade.getValue()));
+
+        return String.format("Grade of type %s with value %d created.", grade.getType().name(), grade.getValue());
+    }
+
+    public String updateGradeStudent(Long id, Long studentID) {
+        Grade grade = readGrade(id);
+        Student student = studentRepository.findById(studentID).orElseThrow(() -> new UsernameNotFoundException("Student not found."));
+        grade.setStudent(student);
+        grade.setUpdatedAt(new Date(System.currentTimeMillis()));
+        repository.save(grade);
+        student.getGrades().add(grade);
+        studentRepository.save(student);
+
+        Email email = Email
+                .builder()
+                .to(student.getParent().getEmail())
+                .subject(String.format("%s %s - New Grade"))
+                .text(String.format("%s %s gave %s %s a grade %d of type %s in %s.", grade.getCreatedBy().getName(), grade.getCreatedBy().getSurname(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getValue(), grade.getType().name(), grade.getSubject().getName()))
+                .build();
+        emailService.sendEmail(email);
+
+        logger.info(String.format("Grade with ID: %d added to student %s %s.", id, student.getName(), student.getSurname()));
+
+        return String.format("Grade with ID: %d added to student %s %s.", id, student.getName(), student.getSurname());
+    }
+
+    public String updateGradeSubject(Long id, Long subjectID) {
+        Grade grade = readGrade(id);
+        Subject subject = subjectRepository.findById(subjectID).orElseThrow(() -> new UsernameNotFoundException("Subject not found."));
+        grade.setSubject(subject);
+        grade.setUpdatedAt(new Date(System.currentTimeMillis()));
+        repository.save(grade);
+        subject.getGrades().add(grade);
+        subjectRepository.save(subject);
+
+        logger.info(String.format("Grade with ID: %d added to subject %s.", id, subject.getName()));
+
+        return String.format("Grade with ID: %d added to subject %s.", id, subject.getName());
+    }
+
+    public String updateGradeTeacher(Long id, Long teacherID) {
+        Grade grade = readGrade(id);
+        Teacher teacher = teacherRepository.findById(teacherID).orElseThrow(() -> new UsernameNotFoundException("Teacher not found."));
+        grade.setCreatedBy(teacher);
+        grade.setUpdatedAt(new Date(System.currentTimeMillis()));
+        repository.save(grade);
+        teacher.getGrades().add(grade);
+        teacherRepository.save(teacher);
+
+        logger.info(String.format("Grade with id: %d added to teacher %s %s.", id, teacher.getName(), teacher.getSurname()));
+
+        return String.format("Grade with id: %d added to teacher %s %s.", id, teacher.getName(), teacher.getSurname());
+    }
+
+    public String updateGradeValue(Long id, int value) {
+        Grade grade = readGrade(id);
+        grade.setValue(value);
+        grade.setUpdatedAt(new Date(System.currentTimeMillis()));
+        repository.save(grade);
+
+        Email email = Email
+                .builder()
+                .to(grade.getStudent().getParent().getEmail())
+                .subject(String.format("%s %s - Grade Update", grade.getStudent().getName(), grade.getStudent().getSurname()))
+                .text(String.format("%s %s updated %s %s's grade in %s to %d", grade.getCreatedBy().getName(), grade.getCreatedBy().getSurname(), grade.getStudent().getName(), grade.getStudent().getSurname(), grade.getSubject().getName(), grade.getValue()))
+                .build();
+        emailService.sendEmail(email);
+
+        logger.info(String.format("Grade with ID: %d updated with value %d.", id, value));
+
+        return String.format("Grade with ID: %d updated with value %d.", id, value);
     }
 }

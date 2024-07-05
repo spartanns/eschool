@@ -53,24 +53,26 @@ public class FeedbackService {
                                         repository.save(feedback);
                                         student.getFeedbacks().add(feedback);
 
-                                        int count = 0;
+                                        if (feedback.getType().equals(FeedbackType.NEGATIVE)) {
+                                            int count = 0;
 
-                                        for (Feedback f : student.getFeedbacks()) {
-                                            if (f.getType().equals(FeedbackType.NEGATIVE)) {
-                                                count++;
+                                            for (Feedback f : student.getFeedbacks()) {
+                                                if (f.getType().equals(FeedbackType.NEGATIVE)) {
+                                                    count++;
+                                                }
                                             }
-                                        }
 
-                                        if (count > 0 && count % 3 == 0) {
-                                            student.setRating(student.getRating() - 1);
+                                            if (count > 0 && count % 3 == 0) {
+                                                student.setRating(student.getRating() - 1);
 
-                                            Email email = Email
-                                                    .builder()
-                                                    .to(student.getParent().getEmail())
-                                                    .subject(String.format("%s %s - Rating Decreased", student.getName(), student.getSurname()))
-                                                    .text(String.format("%s %s's school rating decreased to %d.\nReason: bad behaviour", student.getName(), student.getSurname(), student.getRating()))
-                                                    .build();
-                                            emailService.sendEmail(email);
+                                                Email email = Email
+                                                        .builder()
+                                                        .to(student.getParent().getEmail())
+                                                        .subject(String.format("%s %s - Rating Decreased", student.getName(), student.getSurname()))
+                                                        .text(String.format("%s %s's school rating decreased to %d.\nReason: bad behaviour", student.getName(), student.getSurname(), student.getRating()))
+                                                        .build();
+                                                emailService.sendEmail(email);
+                                            }
                                         }
 
                                         studentRepository.save(student);

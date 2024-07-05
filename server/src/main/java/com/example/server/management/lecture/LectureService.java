@@ -96,6 +96,27 @@ public class LectureService {
                                     students.add(student);
                                 }
 
+
+                                for (Feedback f : l.getFeedbacks()) {
+                                    GradeStudentView student = GradeStudentView
+                                            .builder()
+                                            .id(f.getStudent().getId())
+                                            .name(f.getStudent().getName())
+                                            .surname(f.getStudent().getSurname())
+                                            .build();
+
+                                    TeacherFeedbackView feedback = TeacherFeedbackView
+                                            .builder()
+                                            .id(f.getId())
+                                            .type(f.getType())
+                                            .text(f.getText())
+                                            .createdAt(f.getCreatedAt())
+                                            .updatedAt(f.getUpdatedAt())
+                                            .student(student)
+                                            .build();
+                                    feedbacks.add(feedback);
+                                }
+
                                 for (Grade g : l.getGrades()) {
                                     GradeStudentView student = GradeStudentView
                                             .builder()
